@@ -1,8 +1,34 @@
+import CodableWrapper
+import Foundation
 import Netrofit
 
-let a = 17
-let b = 25
+public struct UserModel: Codable {
+    let id: String
+    let name: String
+}
 
-let (result, code) = #stringify(a + b)
+@API
+@Headers(["token": "a"])
+@FormUrlEncoded
+public struct GitHubAPI {
+    @GET("123")
+    @Headers(["a": "213", "b": "12"])
+    public func user1(id: String = "winddpan") async throws -> UserModel
 
-print("The value \(result) was produced by the code \"\(code)\"")
+    @GET("123")
+    @Headers(["a": "213", "b": "12"])
+    public func user2(id: String = "winddpan") async throws -> (id: String?, name: String)
+
+    @GET("123")
+    @Headers(["a": "213", "b": "12"])
+    public func user3(@Path id: String = "winddpan") async throws -> (String, String)
+}
+
+let provider = Provider(baseURL: "https://www.github.com")
+
+Task {
+    do {
+        let resp = try await GitHubAPI(provider).user2()
+        resp.id
+    }
+}

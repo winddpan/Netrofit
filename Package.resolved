@@ -1,0 +1,24 @@
+{
+  "originHash" : "d8a290922dc67e80eccc5a114f10a47278aff4fbb9c93c8a1f61a10760424c98",
+  "pins" : [
+    {
+      "identity" : "codablewrapper",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/winddpan/CodableWrapper.git",
+      "state" : {
+        "revision" : "1364f6bb625c7d7354bb616c2e0494f7871412e3",
+        "version" : "1.1.4"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax.git",
+      "state" : {
+        "revision" : "0687f71944021d616d34d922343dcef086855920",
+        "version" : "600.0.1"
+      }
+    }
+  ],
+  "version" : 3
+}
