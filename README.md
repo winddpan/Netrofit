@@ -7,29 +7,36 @@
 
 ### 1. 基本请求方法
 
-支持的 HTTP 方法注解：
+支持的 HTTP 方法：
 
 ```swift
 @GET("/users/list")
 func listUsers() async throws -> [User]
+// GET /users/list
 
 @POST("/users/new")
 func createUser(_ user: User) async throws -> User
+// POST /users/new (body: User)
 
 @PUT("/users/{id}")
 func updateUser(id: Int, _ user: User) async throws -> User
+// PUT /users/{id} (body: User)
 
 @PATCH("/users/{id}")
 func partialUpdateUser(id: Int, _ fields: [String: Any]) async throws -> User
+// PATCH /users/{id} (body: fields)
 
 @DELETE("/users/{id}")
 func deleteUser(id: Int) async throws -> Void
+// DELETE /users/{id}
 
 @OPTIONS("/meta")
 func options() async throws -> MetaInfo
+// OPTIONS /meta
 
 @HEAD("/resource/{id}")
 func checkResource(id: Int) async throws -> HTTPHeaders
+// HEAD /resource/{id}
 ```
 
 ---
@@ -42,9 +49,11 @@ func checkResource(id: Int) async throws -> HTTPHeaders
 ```swift
 @GET("/group/{id}/users")
 func groupList(id: Int) async throws -> [User]
+// GET /group/{id}/users
 
 @GET("/group/{gid}/users")
 func groupList(@Path("gid") groupId: Int) async throws -> [User]
+// GET /group/{gid}/users
 ```
 
 ---
@@ -83,9 +92,11 @@ func searchUsers(@Query("q") keyword: String) async throws -> [User]
 ```swift
 @POST("/users/new")
 func createUser(_ user: User) async throws -> User
+// POST /users/new (body: User)
 
 @POST("/items")
 func addItem(@Body item: Item, @Query("notify") notify: Bool) async throws -> Item
+// POST /items?notify=... (body: Item)
 ```
 
 ---
@@ -98,11 +109,13 @@ func addItem(@Body item: Item, @Query("notify") notify: Bool) async throws -> It
 @JSON
 @POST("/users/new")
 func createUser(_ user: User) async throws -> User
+// POST /users/new (json body: User)
 
 // 支持自定义 encoder 和 decoder
 @JSON(encoder: JSONEncoder(), decoder: JSONDecoder())
 @POST("/data")
 func processData(_ data: ComplexData) async throws -> Response
+// POST /data (json body: ComplexData)
 ```
 
 ---
@@ -115,11 +128,13 @@ func processData(_ data: ComplexData) async throws -> Response
 @FormUrlEncoded
 @POST("/user/edit")
 func updateUser(firstName: String, lastName: String) async throws -> User
+// POST /user/edit (form body: firstName,lastName)
 
 // 支持自定义 encoder 和 decoder
 @FormUrlEncoded(encoder: URLEncodedFormEncoder(), decoder: URLEncodedFormDecoder())
 @POST("/form")
 func submitForm(data: FormData) async throws -> Response
+// POST /form (form body: FormData)
 ```
 
 ---
@@ -131,12 +146,18 @@ func submitForm(data: FormData) async throws -> Response
 ```swift
 @Multipart
 @PUT("/user/photo")
-func updateUser(photo: Data, description: String) async throws -> User
+func updateUser(
+    @Part(name: "photo", filename: "avatar.jpg", mimeType: "image/jpeg") photo: Data,
+    @Part(name: "desc") description: String
+) async throws -> User
+// PUT /user/photo (multipart: photo,description)
+// @Part 支持自定义 name、filename、mimeType。
 
 // 支持自定义 encoder 和 decoder
 @Multipart(encoder: MultipartEncoder(), decoder: MultipartDecoder())
 @POST("/upload")
 func uploadFile(file: URL, meta: [String: String]) async throws -> UploadResponse
+// POST /upload (multipart: file,meta)
 ```
 
 ---
@@ -151,15 +172,18 @@ func uploadFile(file: URL, meta: [String: String]) async throws -> UploadRespons
 ])
 @GET("/users/{username}")
 func getUser(username: String) async throws -> User
+// GET /users/{username}
 ```
 
 #### 动态 Header
 ```swift
 @GET("/user")
 func getUser(@Header("Authorization") token: String) async throws -> User
+// GET /user (header: {"Authorization": ...})
 
 @GET("/user")
 func getUser(@HeaderMap headers: [String: String]) async throws -> User
+// GET /user (header {...})
 ```
 
 ---
@@ -192,6 +216,7 @@ func getUser(@HeaderMap headers: [String: String]) async throws -> User
 @GET("/users")
 @ResponseKeyPath("data.list")
 func listUsers() async throws -> [User]
+// GET /users (response key path: data.list)
 ```
 
 ---
@@ -204,14 +229,34 @@ func listUsers() async throws -> [User]
 ```swift
 @GET("/user")
 func getUser(id: Int) async throws -> (id: String, name: String)
+// GET /user?id=...
 
-@GET("/user-list")
+@GET("/users")
 func getUserList() async throws -> (list: [(id: String, name: String)], count: Int)
+// GET /users
 ```
 
 ---
 
-### 12. 额外支持（Retrofit 文档未重点提到）
+### 12. Streaming 实时返回（AsyncStream）
+
+- `@Streaming` 标注让客户端保持长连接，适用于 WebSocket、Server-Sent Events 等持续推送的场景。
+- 方法返回 `AsyncStream`（或 `AsyncThrowingStream`）来逐条消费服务端事件，配合 `for await` 监听即可。
+
+```swift
+@Streaming
+@GET("/events/stream")
+func listenEvents(roomID: String) async throws -> AsyncStream<Event>
+// GET /events/stream?roomID=... 持续推送 Event
+
+for await event in try await api.listenEvents(roomID: "chat") {
+    print("收到事件:", event)
+}
+```
+
+---
+
+### 13. 额外支持
 
 - **默认方法**：无注解则默认为 `application/json`。
 - **Generic Response**：支持泛型封装，如 `Response<T>`。
@@ -222,10 +267,6 @@ func getUserList() async throws -> (list: [(id: String, name: String)], count: I
 
 ---
 
-我已经把 **tuple 返回值** 和 **@HeaderMap** 支持补充到你的 Swift 版本 Retrofit 规范里。  
-如果你希望，我可以在下一步帮你画一张 **API 调用声明解析优先级图**，把 Path → Query → Body → Header 检测流程和 tuple 解析顺序全部可视化，这样你就可以为你的 Swift 框架直接实现一个解析器。  
-
-✅ 要帮你画这张优先级流程图吗？这样你就能一目了然知道每个参数会怎么被映射。
 ## Acknowledgements
 
 Heavily inspired by [Rapyrus](https://github.com/joshuawright11/papyrus), [Retrofit](https://github.com/square/retrofit).
