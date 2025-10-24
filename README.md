@@ -1,7 +1,30 @@
 # Netrofit
 
-> Swift 版本 Retrofit，参考 Retrofit Java API，结合 Swift 的自动推断能力，
+> Swift 版本 Retrofit，参考 Retrofit API，结合 Swift 的自动推断能力，
 > 对可以自动识别的场景**不要求额外注解**，同时增强了 Swift 专属特性（tuple 返回、嵌套 tuple）。
+
+
+```swift
+@API
+@Headers(["token": "Bearer JWT_TOKEN"])
+struct UsersAPI {
+    @GET("/user")
+    func getUser(@Query("identifier") id: String) async throws -> User
+    // GET /user?identifier=...
+
+    @POST("/user")
+    func createUser(email: String, password: String) async throws -> (id: String, name: String)
+    // POST /user (body: {"email":..., "password":...}})
+
+    @GET("/users/{username}/todos")
+    func getTodos(username: String) async throws -> [Todo]
+    // GET /user/winddpan/todos
+}
+
+let provider = Provider(baseURL: "https://www.example.com")
+let resp = try await UsersAPI(provider).getUser(id: "winddpan")
+
+```
 
 ---
 
