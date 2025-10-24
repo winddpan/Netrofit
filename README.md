@@ -1,7 +1,7 @@
 # Netrofit
 
-> Swift 版本 Retrofit，参考 Retrofit API，结合 Swift 的自动推断能力，
-> 对可以自动识别的场景**不要求额外注解**，同时增强了 Swift 专属特性（tuple 返回、嵌套 tuple）。
+Swift 版本 Retrofit，参考 Retrofit API，结合 Swift 的自动推断能力，
+对可以自动识别的场景**不要求额外注解**，同时增强了 Swift 专属特性（tuple 返回、嵌套 tuple）。
 
 
 ```swift
@@ -18,7 +18,7 @@ struct UsersAPI {
 
     @GET("/users/{username}/todos")
     func getTodos(username: String) async throws -> [Todo]
-    // GET /user/winddpan/todos
+    // GET /users/winddpan/todos
 }
 
 let provider = Provider(baseURL: "https://www.example.com")
@@ -153,6 +153,11 @@ func processData(_ data: ComplexData) async throws -> Response
 func updateUser(firstName: String, lastName: String) async throws -> User
 // POST /user/edit (form body: firstName,lastName)
 
+@FormUrlEncoded
+@POST("/user/edit")
+func updateUser(@Field("first") firstName: String, @Field("last") lastName: String) async throws -> User
+// POST /user/edit (form body: first,last)
+
 // 支持自定义 encoder 和 decoder
 @FormUrlEncoded(encoder: URLEncodedFormEncoder(), decoder: URLEncodedFormDecoder())
 @POST("/form")
@@ -211,27 +216,7 @@ func getUser(@HeaderMap headers: [String: String]) async throws -> User
 
 ---
 
-### 9. 自动推断规则（Swift 特性）
-
-1. **Path 参数自动匹配规则**  
-   - URL 路径中的 `{placeholder}` 会自动匹配同名参数。
-   - 仅在不匹配时需要显式 `@Path`。
-
-2. **Query 参数自动推断规则**  
-   - 除 Path 参数外，非对象类型（String, Int, Bool 等）会自动映射为 query 参数。
-   - `Dictionary` 会被展开为多个 query 项。
-
-3. **Body 参数自动推断规则**  
-   - 除 Query/Path/Header 外的非基础类型对象自动作为 Body。
-   - 多个对象参数时需使用 `@Body` 区分。
-
-4. **默认编码规则**  
-   - JSON 为默认 body 编码（可选自定义 Converter）。
-   - URL Encoding 为默认 query 参数编码。
-
----
-
-### 10.  返回值解析 KeyPath
+### 9.  返回值解析 KeyPath
 
 `@ResponseKeyPath` 可以解析JSON中的KeyPath，支持多级嵌套。
 
@@ -244,7 +229,7 @@ func listUsers() async throws -> [User]
 
 ---
 
-### 11. 返回值支持 tuple（包括嵌套 tuple）
+### 10. 返回值支持 tuple（包括嵌套 tuple）
 
  支持返回值为 tuple，且 tuple 可以嵌套。  
 每个 tuple 元素会按顺序映射对应的响应数据部分（例如通过多分部解析器或批量请求返回）。
@@ -261,7 +246,7 @@ func getUserList() async throws -> (list: [(id: String, name: String)], count: I
 
 ---
 
-### 12. Streaming 实时返回（AsyncStream）
+### 11. Streaming 实时返回（AsyncStream）
 
 - `@Streaming` 标注让客户端保持长连接，适用于 WebSocket、Server-Sent Events 等持续推送的场景。
 - 方法返回 `AsyncStream`（或 `AsyncThrowingStream`）来逐条消费服务端事件，配合 `for await` 监听即可。
@@ -279,14 +264,37 @@ for await event in try await api.listenEvents(roomID: "chat") {
 
 ---
 
+### 12. 自动推断规则
+
+1. **Path 参数自动匹配规则**  
+   - URL 路径中的 `{placeholder}` 会自动匹配同名参数。
+   - 仅在不匹配时需要显式 `@Path`。
+
+2. **Query 参数自动推断规则**  
+   - 除 Path 参数外，非对象类型（String, Int, Bool 等）会自动映射为 query 参数。
+   - `Dictionary` 会被展开为多个 query 项。
+
+3. **Field 参数自动推断规则**  
+   - 在 `@FormUrlEncoded` 方法中，基础类型参数会自动映射为表单字段。
+   - 参数名直接作为表单字段名，除非使用 `@Field` 指定别名。
+   - 对象类型参数会被序列化为表单字段（使用默认或自定义编码器）。
+
+4. **Body 参数自动推断规则**  
+   - 除 Query/Path/Header 外的非基础类型对象自动作为 Body。
+   - 多个对象参数时需使用 `@Body` 区分。
+
+5. **默认编码规则**  
+   - JSON 为默认 body 编码（可选自定义 Converter）。
+   - URL Encoding 为默认 query 参数编码。
+
+
+---
+
 ### 13. 额外支持
 
 - **默认方法**：无注解则默认为 `application/json`。
-- **Generic Response**：支持泛型封装，如 `Response<T>`。
 - **Async & Combine**：既支持 `async/await`，也可返回 `Publisher`。
-- **Global Interceptors**：可在 `RetrofitSwift` 实例注册 header、logging、auth 拦截器。
-- **Custom Converter**：支持 XML、ProtoBuf 等自定义序列化。
-- **Mock Support**：内置 MockAdapter，可用于测试。
+- **Global Interceptors**：可注册 header、logging、auth 拦截器。
 
 ---
 
