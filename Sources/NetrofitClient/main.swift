@@ -21,7 +21,7 @@ public struct GitHubAPI {
 
     @GET("123")
     @Headers(["a": "213", "b": "12"])
-    public func user3(@Path id: String = "winddpan") async throws -> (String, String)
+    public func user3(@Path id: String = "winddpan") async throws -> (id: String?, name: String)
 }
 
 let provider = Provider(baseURL: "https://www.github.com")
@@ -32,3 +32,6 @@ Task {
         resp.id
     }
 }
+
+typealias User = (id: String, name: String)
+typealias Obj = (list: [(id: String, name: String)])
