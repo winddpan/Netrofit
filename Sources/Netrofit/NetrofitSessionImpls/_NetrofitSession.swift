@@ -42,7 +42,7 @@ class _NetrofitSession: NSObject, NetrofitSession, URLSessionDataDelegate {
 
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         if let _task = createdTasks.first(where: { $0.dataTask === dataTask }) {
-            _task.responseData.append(data)
+            _task.didReceiveData(data)
         }
     }
 

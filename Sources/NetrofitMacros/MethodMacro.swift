@@ -181,12 +181,9 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
                 guard let genericType = type.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
                     throw NetrofitError.returnTypeError("unknown AsyncThrowingStream genericArgument")
                 }
-                guard let errorType = type.genericArgumentClause?.arguments.last?.argument.trimmedDescription else {
-                    throw NetrofitError.returnTypeError("unknown AsyncThrowingStream genericArgument")
-                }
                 codes.append(
                     """
-                    return try task.connectThrowingStream(\(raw: genericType).self, errorType: \(raw: errorType).self, using: builder.decoder)
+                    return try task.connectThrowingStream(\(raw: genericType).self, using: builder.decoder)
                     """
                 )
             } else {
@@ -196,7 +193,6 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
                     try response.validate()
                     """
                 )
-
                 if let tuple = returnType.as(TupleTypeSyntax.self) {
                     codes.append("")
                     let converted = try convertOneTuple(tuple)

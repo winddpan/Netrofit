@@ -15,8 +15,8 @@ public protocol NetrofitSession {
 public protocol NetrofitTask {
     func resume()
     func waitUntilFinished() async -> NetrofitResponse
-    func connectStream<T: Decodable>(_ type: T.Type, using: HTTPBodyDecoder) throws -> AsyncStream<T>
-    func connectThrowingStream<T: Decodable, E: Error>(_ type: T.Type, errorType: E.Type, using: HTTPBodyDecoder) throws -> AsyncThrowingStream<T, E>
+    func connectStream<T: Decodable>(_ type: T.Type, using decoder: HTTPBodyDecoder) throws -> AsyncStream<T>
+    func connectThrowingStream<T: Decodable>(_ type: T.Type, using decoder: HTTPBodyDecoder) throws -> AsyncThrowingStream<T, Error>
 }
 
 public protocol NetrofitResponse {
@@ -27,5 +27,5 @@ public protocol NetrofitResponse {
     var error: Error? { get }
 
     func validate() throws
-    func decode<T: Decodable>(_ type: T.Type, using: HTTPBodyDecoder) throws -> T
+    func decode<T: Decodable>(_ type: T.Type, using decoder: HTTPBodyDecoder) throws -> T
 }

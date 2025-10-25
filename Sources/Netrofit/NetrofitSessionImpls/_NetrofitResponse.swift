@@ -1,5 +1,10 @@
 import Foundation
 
+enum NetrofitResponseError: Error {
+    case decodingEmptyDataError
+    case statusCodeError(Int)
+}
+
 struct _NetrofitResponse: NetrofitResponse {
     var request: URLRequest
     var body: Data?
@@ -11,9 +16,17 @@ struct _NetrofitResponse: NetrofitResponse {
         self.request = request
     }
 
-    func decode<T: Decodable>(_ type: T.Type, using: HTTPBodyDecoder) throws -> T {
-        fatalError()
+    func decode<T: Decodable>(_ type: T.Type, using decoder: HTTPBodyDecoder) throws -> T {
+        guard let body else {
+            throw NetrofitResponseError.decodingEmptyDataError
+        }
+        return try decoder.decode(type, from: body)
     }
 
-    func validate() throws {}
+    func validate() throws {
+        if let error { throw error }
+        if !(200 ..< 300).contains(statusCode ?? -1) {
+            throw NetrofitResponseError.statusCodeError(statusCode ?? -1)
+        }
+    }
 }

@@ -6,6 +6,7 @@ public struct RequestBuilder {
     public var encoder: HTTPBodyEncoder
     public var decoder: HTTPBodyDecoder
     public var headers: [String: String]?
+    public var queries: [String: String]?
     public var responseKeyPath: String?
     public var payloadFormat: String = "JSON"
 
@@ -36,16 +37,24 @@ public struct RequestBuilder {
         self.headers = headers
     }
 
-    public mutating func addQuery(_ newHeaders: [String: String]?) {
-        if let headers {
-            self.headers = headers.merging(newHeaders ?? [:], uniquingKeysWith: { _, new in new })
-        } else {
-            headers = newHeaders
-        }
-    }
-
     public mutating func addQuery<T: CustomStringConvertible>(_ key: String, value: T?, encoded: Bool) {
+        if let map = value as? [String: String] {
+            for (key, value) in map {
+                addQuery(key, value: value, encoded: encoded)
+            }
+            return
+        }
+
         guard let value else { return }
+        var stringValue = "\(value)"
+        if !encoded {
+            stringValue = stringValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? stringValue
+        }
+        if let queries {
+            self.queries = queries.merging([key: stringValue], uniquingKeysWith: { _, new in new })
+        } else {
+            queries = [key: stringValue]
+        }
     }
 
     public mutating func setBody<T: Encodable>(_ body: T?) {}
