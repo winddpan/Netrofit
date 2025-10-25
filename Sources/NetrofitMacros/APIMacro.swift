@@ -15,14 +15,14 @@ struct APIMacro: MemberMacro {
         let encoder: String
         let decoder: String
         if let attribute = attributes?.findAttribute(named: "FormUrlEncoded") {
-            encoder = attribute.findLabel(named: "encoder")?.trimmedDescription ?? "URLEncodedFormEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.trimmedDescription ?? "URLEncodedFormDecoder()"
+            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "URLEncodedFormEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "URLEncodedFormDecoder()"
         } else if let attribute = attributes?.findAttribute(named: "Multipart") {
-            encoder = attribute.findLabel(named: "encoder")?.trimmedDescription ?? "MultipartEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.trimmedDescription ?? "MultipartDecoder()"
+            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "MultipartEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "MultipartDecoder()"
         } else if let attribute = attributes?.findAttribute(named: "JSON") {
-            encoder = attribute.findLabel(named: "encoder")?.trimmedDescription ?? "JSONEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.trimmedDescription ?? "JSONDecoder()"
+            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "JSONEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
         } else {
             encoder = "JSONEncoder()"
             decoder = "JSONDecoder()"
@@ -37,10 +37,6 @@ struct APIMacro: MemberMacro {
 
         \(raw: ifPublic ? "public init" : "init")(_ provider: Netrofit.Provider) {
             self.provider = provider
-        }
-
-        private var headers: [String: String]? { 
-            \(raw: headers) 
         }
 
         private func builder(path: String, method: String) -> RequestBuilder {

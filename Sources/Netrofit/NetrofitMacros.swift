@@ -11,7 +11,7 @@ public macro API() = #externalMacro(module: "NetrofitMacros", type: "APIMacro")
 public macro Headers(_ headers: [String: String]) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 @attached(body)
-public macro DecodePath(_ path: String) = #externalMacro(module: "NetrofitMacros", type: "MethodMacro")
+public macro ResponseKeyPath(_ path: String) = #externalMacro(module: "NetrofitMacros", type: "MethodMacro")
 
 @attached(peer)
 public macro JSON(

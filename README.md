@@ -18,11 +18,11 @@ struct UsersAPI {
 
     @GET("/users/{username}/todos")
     func getTodos(username: String) async throws -> [Todo]
-    // GET /users/winddpan/todos
+    // GET /users/johne/todos
 }
 
 let provider = Provider(baseURL: "https://www.example.com")
-let resp = try await UsersAPI(provider).getUser(id: "winddpan")
+let resp = try await UsersAPI(provider).getUser(id: "johne")
 
 ```
 
@@ -265,7 +265,7 @@ func uploadFile(file: URL, meta: [String: String]) async throws -> UploadRespons
 ])
 @GET("/users/{username}")
 func getUser(username: String) async throws -> User
-// GET /users/{username}
+// GET /users/johne
 ```
 
 #### 动态 Header

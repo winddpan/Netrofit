@@ -52,13 +52,22 @@ public struct Field<T: Encodable> {
 
 // Header
 @propertyWrapper
-public struct Header {
-    public var wrappedValue: String?
-    public let name: String
+public struct Header<T> {
+    public var wrappedValue: T // String
+    public let name: String?
 
-    public init(wrappedValue: String? = nil, _ name: String) {
+    public init(wrappedValue: T, _ name: String? = nil) {
         self.wrappedValue = wrappedValue
         self.name = name
+    }
+}
+
+@propertyWrapper
+public struct HeaderMap<T> {
+    public var wrappedValue: T // [String: String]
+
+    public init(wrappedValue: T) {
+        self.wrappedValue = wrappedValue
     }
 }
 
@@ -66,12 +75,14 @@ public struct Header {
 @propertyWrapper
 public struct Part<T: Encodable> {
     public var wrappedValue: T
-    public let name: String
-    public let encoding: String?
+    public let name: String?
+    public let filename: String?
+    public let mimeType: String?
 
-    public init(wrappedValue: T, _ name: String, encoding: String? = nil) {
+    public init(wrappedValue: T, name: String? = nil, filename: String? = nil, mimeType: String? = nil) {
         self.wrappedValue = wrappedValue
         self.name = name
-        self.encoding = encoding
+        self.filename = filename
+        self.mimeType = mimeType
     }
 }
