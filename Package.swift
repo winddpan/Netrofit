@@ -20,7 +20,6 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax", "509.0.0" ..< "601.0.0-prerelease"),
-        .package(url: "https://github.com/winddpan/CodableWrapper.git", from: "1.1.4"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -35,9 +34,17 @@ let package = Package(
         ),
 
         // Library that exposes a macro as part of its API, which is used in client programs.
-        .target(name: "Netrofit", dependencies: ["CodableWrapper", "NetrofitMacros"]),
+        .target(name: "Netrofit", dependencies: ["NetrofitMacros"]),
 
         // A client of the library, which is able to use the macro in its own code.
-        .executableTarget(name: "NetrofitClient", dependencies: ["Netrofit", "CodableWrapper"]),
+        .executableTarget(name: "NetrofitClient", dependencies: ["Netrofit"]),
+
+//        .testTarget(
+//            name: "NetrofitTests",
+//            dependencies: [
+//                "PapyrusPlugin",
+//                .product(name: "MacroTesting", package: "swift-macro-testing"),
+//            ],
+//        ),
     ]
 )

@@ -10,14 +10,22 @@ struct APIMacro: MemberMacro {
         } else if let declaration = declaration.as(ClassDeclSyntax.self) {
             attributes = declaration.attributes
         }
-        let headers = attributes?.findAttribute(named: "Headers")?.arguments?.trimmed.description
-        let payloadFormat: String
-        if attributes?.findAttribute(named: "FormUrlEncoded") != nil {
-            payloadFormat = "PayloadFormat.FormUrlEncoded"
-        } else if attributes?.findAttribute(named: "Multipart") != nil {
-            payloadFormat = "PayloadFormat.Multipart"
+        let headers = attributes?.findAttribute(named: "Headers")?.arguments?.trimmed.description ?? "nil"
+
+        let encoder: String
+        let decoder: String
+        if let attribute = attributes?.findAttribute(named: "FormUrlEncoded") {
+            encoder = attribute.findLabel(named: "encoder")?.trimmedDescription ?? "URLEncodedFormEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.trimmedDescription ?? "URLEncodedFormDecoder()"
+        } else if let attribute = attributes?.findAttribute(named: "Multipart") {
+            encoder = attribute.findLabel(named: "encoder")?.trimmedDescription ?? "MultipartEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.trimmedDescription ?? "MultipartDecoder()"
+        } else if let attribute = attributes?.findAttribute(named: "JSON") {
+            encoder = attribute.findLabel(named: "encoder")?.trimmedDescription ?? "JSONEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.trimmedDescription ?? "JSONDecoder()"
         } else {
-            payloadFormat = "PayloadFormat.JSON"
+            encoder = "JSONEncoder()"
+            decoder = "JSONDecoder()"
         }
 
         let ifPublic = declaration.modifiers.contains(where: {
@@ -27,18 +35,22 @@ struct APIMacro: MemberMacro {
         let provider: DeclSyntax = """
         private let provider: Netrofit.Provider
 
-        \(raw: ifPublic ? "public init": "init")(_ provider: Netrofit.Provider) {
+        \(raw: ifPublic ? "public init" : "init")(_ provider: Netrofit.Provider) {
             self.provider = provider
         }
 
         private var headers: [String: String]? { 
-            \(raw: headers ?? "nil") 
+            \(raw: headers) 
         }
 
         private func builder(path: String, method: String) -> RequestBuilder {
-            var builder = RequestBuilder(path: path, method: method, payloadFormat: \(raw: payloadFormat))
-            builder.addHeaders(headers)
-            return builder
+            RequestBuilder(
+                path: path, 
+                method: method, 
+                encoder: \(raw: encoder), 
+                decoder: \(raw: decoder), 
+                headers: \(raw: headers)
+            )
         }
         """
 

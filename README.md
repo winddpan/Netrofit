@@ -14,7 +14,7 @@ struct UsersAPI {
 
     @POST("/user")
     func createUser(email: String, password: String) async throws -> (id: String, name: String)
-    // POST /user (body: {"email":..., "password":...}})
+    // POST /user (body: {"email": String, "password": String}})
 
     @GET("/users/{username}/todos")
     func getTodos(username: String) async throws -> [Todo]
@@ -75,7 +75,19 @@ func groupList(id: Int) async throws -> [User]
 // GET /group/{id}/users
 
 @GET("/group/{gid}/users")
+func groupList(@Path("gid") gid: Int) async throws -> [User]
+// GET /group/{gid}/users
+
+@GET("/group/{gid}/users")
 func groupList(@Path("gid") groupId: Int) async throws -> [User]
+// GET /group/{gid}/users
+
+@GET("/group/{gid}/users")
+func groupList(@Path(encoded: true) gid: Int) async throws -> [User]
+// GET /group/{gid}/users
+
+@GET("/group/{gid}/users")
+func groupList(@Path("gid", encoded: true) groupId: Int) async throws -> [User]
 // GET /group/{gid}/users
 ```
 
@@ -85,7 +97,7 @@ func groupList(@Path("gid") groupId: Int) async throws -> [User]
 
 - 自动推断：简单类型方法参数 → 自动映射为 query 参数（除非已匹配 @Path）。
 - Map / Dictionary 自动展开为 `&key=value`。
-- 支持显式 `@Query` 仅用于覆盖自动推断的名字或编码规则。
+- 支持显式 `@Query` 可用于覆盖自动推断的参数名、或者POST等非标准RESTful API请求。
 
 ```swift
 @GET("/transactions")
@@ -101,16 +113,33 @@ func searchUsers(filters: [String: String]) async throws -> [User]
 // GET /search?name=...&age=...
 
 @GET("/search")
+func searchUsers(keyword: String) async throws -> [User]
+// GET /search?keyword=...
+
+@GET("/search")
+func searchUsers(q keyword: String) async throws -> [User]
+// GET /search?q=...
+
+@GET("/search")
 func searchUsers(@Query("q") keyword: String) async throws -> [User]
 // GET /search?q=...
+
+@GET("/search")
+func searchUsers(@Query(encoded: true) keyword: String) async throws -> [User]
+// GET /search?q=...
+
+@POST("/search")
+func searchUsers(@Query("q", encoded: true) keyword: String) async throws -> [User]
+// POST /search?q=...
 ```
 
 ---
 
 ### 4. Request Body
 
-- 除仅用于 query/path/header 的基础类型，其他对象参数会自动作为 Body。
-- 显式 `@Body` 可用于区分多个对象参数的含义。
+- POST/PUT/PATCH 中只有一个参数为"_"会自动作为 
+Body
+- 支持显式 `@Body` 覆盖GET等非标准RESTful API请求。
 
 ```swift
 @POST("/users/new")
@@ -118,32 +147,68 @@ func createUser(_ user: User) async throws -> User
 // POST /users/new (body: User)
 
 @POST("/items")
+func addItem(item: Item, @Query("notify") notify: Bool) async throws -> Item
+// POST /items?notify=true (body: {"item": Item})
+
+@POST("/items")
 func addItem(@Body item: Item, @Query("notify") notify: Bool) async throws -> Item
-// POST /items?notify=... (body: Item)
+// POST /items?notify=true (body: Item)
 ```
 
 ---
 
-### 5. JSON
+### 5. Field
 
-适用于 `application/json`。
+- POST/PUT/PATCH 中除仅用于 @Query/@Path/@Header/@Body 的基础类型，其他对象参数会自动作为 
+Body Field
+- 支持显式 `@Body` 覆盖GET等非标准RESTful API请求。
 
 ```swift
-@JSON
+@POST("/users/new")
+func createUser(user: User) async throws -> User
+// POST /users/new (body: {"user": User})
+
+@POST("/users/new")
+func createUser(name: String, id: String) async throws -> User
+// POST /users/new (body: {"name": String, "id": String})
+
+@POST("/users/new")
+func createUser(@Field("new_name") name: String, id: String) async throws -> User
+// POST /users/new (body: {"new_name": String, "id": String})
+
+
+@POST("/users/new")
+@FormUrlEncoded
+func createUser(@Field("new_name") name: String, id: String) async throws -> User
+// POST /users/new (form body: {"new_name": String, "id": String})
+```
+
+---
+
+### 6. JSON
+- JSON 为默认 body 编码。
+- 适用于 `application/json`。
+
+```swift
 @POST("/users/new")
 func createUser(_ user: User) async throws -> User
 // POST /users/new (json body: User)
 
+@JSON
+@POST("/users/new")
+func createUser(id: String, name: String) async throws -> User
+// POST /users/new (json body: {"id": String, "name": String})
+
 // 支持自定义 encoder 和 decoder
 @JSON(encoder: JSONEncoder(), decoder: JSONDecoder())
 @POST("/data")
-func processData(_ data: ComplexData) async throws -> Response
-// POST /data (json body: ComplexData)
+func createUser(user: User) async throws -> User
+// POST /users/new (json body: {"user": User})
 ```
 
 ---
 
-### 6. Form-encoded
+### 7. Form-encoded
 
 适用于 `application/x-www-form-urlencoded`。
 
@@ -151,23 +216,23 @@ func processData(_ data: ComplexData) async throws -> Response
 @FormUrlEncoded
 @POST("/user/edit")
 func updateUser(firstName: String, lastName: String) async throws -> User
-// POST /user/edit (form body: firstName,lastName)
+// POST /user/edit (form body: firstName=...&lastName=...)
 
 @FormUrlEncoded
 @POST("/user/edit")
 func updateUser(@Field("first") firstName: String, @Field("last") lastName: String) async throws -> User
-// POST /user/edit (form body: first,last)
+// POST /user/edit (form body: first=...&last=...)
 
 // 支持自定义 encoder 和 decoder
 @FormUrlEncoded(encoder: URLEncodedFormEncoder(), decoder: URLEncodedFormDecoder())
 @POST("/form")
-func submitForm(data: FormData) async throws -> Response
-// POST /form (form body: FormData)
+func submitForm(data: FormData) async throws
+// POST /form (form body: ...=...&....=...&...=...)
 ```
 
 ---
 
-### 7. Multipart
+### 8. Multipart
 
 适用于文件上传或富媒体内容。
 
@@ -190,7 +255,7 @@ func uploadFile(file: URL, meta: [String: String]) async throws -> UploadRespons
 
 ---
 
-### 8. Header 操作
+### 9. Header 操作
 
 #### 静态 Header
 ```swift
@@ -216,7 +281,7 @@ func getUser(@HeaderMap headers: [String: String]) async throws -> User
 
 ---
 
-### 9.  返回值解析 KeyPath
+### 10.  返回值解析 KeyPath
 
 `@ResponseKeyPath` 可以解析JSON中的KeyPath，支持多级嵌套。
 
@@ -229,7 +294,7 @@ func listUsers() async throws -> [User]
 
 ---
 
-### 10. 返回值支持 tuple（包括嵌套 tuple）
+### 11. 返回值支持 tuple（包括嵌套 tuple）
 
  支持返回值为 tuple，且 tuple 可以嵌套。  
 每个 tuple 元素会按顺序映射对应的响应数据部分（例如通过多分部解析器或批量请求返回）。
@@ -246,7 +311,7 @@ func getUserList() async throws -> (list: [(id: String, name: String)], count: I
 
 ---
 
-### 11. Streaming 实时返回（AsyncStream）
+### 12. Streaming 实时返回（AsyncStream）
 
 - `@Streaming` 标注让客户端保持长连接，适用于 WebSocket、Server-Sent Events 等持续推送的场景。
 - 方法返回 `AsyncStream`（或 `AsyncThrowingStream`）来逐条消费服务端事件，配合 `for await` 监听即可。
@@ -264,7 +329,7 @@ for await event in try await api.listenEvents(roomID: "chat") {
 
 ---
 
-### 12. 自动推断规则
+### 13. 自动推断规则
 
 1. **Path 参数自动匹配规则**  
    - URL 路径中的 `{placeholder}` 会自动匹配同名参数。
@@ -277,14 +342,15 @@ for await event in try await api.listenEvents(roomID: "chat") {
 3. **Field 参数自动推断规则**  
    - 在 `@FormUrlEncoded` 方法中，基础类型参数会自动映射为表单字段。
    - 参数名直接作为表单字段名，除非使用 `@Field` 指定别名。
+   - POST/PUT/PATCH 中除仅用于 @Query/@Path/@Header/@Body 的基础类型，其他对象参数会自动作为 Body Field
    - 对象类型参数会被序列化为表单字段（使用默认或自定义编码器）。
 
 4. **Body 参数自动推断规则**  
-   - 除 Query/Path/Header 外的非基础类型对象自动作为 Body。
-   - 多个对象参数时需使用 `@Body` 区分。
+   - POST/PUT/PATCH 中只有一个参数为"_"会自动作为 
+Body
 
-5. **默认编码规则**  
-   - JSON 为默认 body 编码（可选自定义 Converter）。
+1. **默认编码规则**  
+   - JSON 为默认 body 编码。
    - URL Encoding 为默认 query 参数编码。
 
 

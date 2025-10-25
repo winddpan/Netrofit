@@ -2,12 +2,12 @@ import Foundation
 
 // URL
 @propertyWrapper
-public struct Path {
-    public var wrappedValue: String
-    private let path: String
+public struct Path<T: CustomStringConvertible> {
+    public var wrappedValue: T
+    private let path: String?
     private let encoded: Bool
 
-    public init(wrappedValue: String, _ path: String = "", encoded: Bool = true) {
+    public init(wrappedValue: T, _ path: String? = nil, encoded: Bool = false) {
         self.wrappedValue = wrappedValue
         self.path = path
         self.encoded = encoded
@@ -16,18 +16,39 @@ public struct Path {
 
 // Query
 @propertyWrapper
-public struct Query {
-    public var wrappedValue: String
-    private let path: String
+public struct Query<T: CustomStringConvertible> {
+    public var wrappedValue: T
+    private let path: String?
     private let encoded: Bool
 
-    public init(wrappedValue: String, _ path: String = "", encoded: Bool = true) {
+    public init(wrappedValue: T, _ path: String? = nil, encoded: Bool = false) {
         self.wrappedValue = wrappedValue
         self.path = path
         self.encoded = encoded
     }
 }
 
+// Body
+@propertyWrapper
+public struct Body<T: Encodable> {
+    public var wrappedValue: T
+
+    public init(wrappedValue: T) {
+        self.wrappedValue = wrappedValue
+    }
+}
+
+// Query
+@propertyWrapper
+public struct Field<T: Encodable> {
+    public var wrappedValue: T
+    private let path: String?
+
+    public init(wrappedValue: T, _ path: String? = nil) {
+        self.wrappedValue = wrappedValue
+        self.path = path
+    }
+}
 
 // Header
 @propertyWrapper
@@ -43,28 +64,14 @@ public struct Header {
 
 // Multipart
 @propertyWrapper
-public struct Part {
-    public var wrappedValue: Encodable?
+public struct Part<T: Encodable> {
+    public var wrappedValue: T
     public let name: String
     public let encoding: String?
 
-    public init(wrappedValue: Encodable? = nil, _ name: String, encoding: String? = nil) {
+    public init(wrappedValue: T, _ name: String, encoding: String? = nil) {
         self.wrappedValue = wrappedValue
         self.name = name
         self.encoding = encoding
-    }
-}
-
-// Body
-@propertyWrapper
-public struct Body {
-    public var wrappedValue: Encodable?
-    private let path: String
-    private let encoded: Bool
-
-    public init(wrappedValue: Encodable?, _ path: String = "", encoded: Bool = true) {
-        self.wrappedValue = wrappedValue
-        self.path = path
-        self.encoded = encoded
     }
 }

@@ -11,7 +11,7 @@ public struct NetrofitResponse {
 
     }
 
-    public func decode<T: Decodable>(_ type: T.Type, using: PayloadFormat) throws -> T {
+    public func decode<T: Decodable>(_ type: T.Type, using: HTTPBodyDecoder) throws -> T {
         fatalError()
     }
 }

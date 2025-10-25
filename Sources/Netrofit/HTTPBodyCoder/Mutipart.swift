@@ -1,9 +1,5 @@
 import Foundation
 
-public extension PayloadFormat {
-    static let Multipart = PayloadFormat(encoder: MultipartEncoder(), decoder: MultipartDecoder())
-}
-
 open class MultipartEncoder: HTTPBodyEncoder {
     open var contentType: String { "multipart/form-data; boundary=\(boundary)" }
     public let boundary: String

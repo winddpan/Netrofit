@@ -10,14 +10,38 @@ public macro API() = #externalMacro(module: "NetrofitMacros", type: "APIMacro")
 @attached(peer)
 public macro Headers(_ headers: [String: String]) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
-@attached(peer)
-public macro FormUrlEncoded() = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
+@attached(body)
+public macro DecodePath(_ path: String) = #externalMacro(module: "NetrofitMacros", type: "MethodMacro")
 
 @attached(peer)
-public macro Multipart() = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
+public macro JSON(
+    encoder: HTTPBodyEncoder = JSONEncoder(),
+    decoder: HTTPBodyDecoder = JSONDecoder()
+) = #externalMacro(
+    module: "NetrofitMacros",
+    type: "EmptyMacro"
+)
 
 @attached(peer)
-public macro Streaming() = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
+public macro FormUrlEncoded(
+    encoder: HTTPBodyEncoder = URLEncodedFormEncoder(),
+    decoder: HTTPBodyDecoder = URLEncodedFormDecoder()
+) = #externalMacro(
+    module: "NetrofitMacros",
+    type: "EmptyMacro"
+)
+
+@attached(peer)
+public macro Multipart(
+    encoder: HTTPBodyEncoder = MultipartEncoder(),
+    decoder: HTTPBodyDecoder = MultipartDecoder()
+) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
+
+@attached(peer)
+public macro Streaming(
+    encoder: HTTPBodyEncoder = JSONEncoder(),
+    decoder: HTTPBodyDecoder = JSONDecoder()
+) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 // MARK: Method
 

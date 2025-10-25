@@ -19,7 +19,3 @@ open class URLEncodedFormDecoder: HTTPBodyDecoder {
 
     public init() {}
 }
-
-public extension PayloadFormat {
-    static let FormUrlEncoded = PayloadFormat(encoder: URLEncodedFormEncoder(), decoder: URLEncodedFormDecoder())
-}

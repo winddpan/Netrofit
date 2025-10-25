@@ -5,7 +5,3 @@ extension JSONEncoder: HTTPBodyEncoder {
 }
 
 extension JSONDecoder: HTTPBodyDecoder {}
-
-public extension PayloadFormat {
-    static let JSON = PayloadFormat(encoder: JSONEncoder(), decoder: JSONDecoder())
-}
