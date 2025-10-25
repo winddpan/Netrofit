@@ -20,6 +20,7 @@ enum NetrofitError: Error {
     case bodyError(String)
     case headerError(String)
     case multipartError(String)
+    case returnTypeError(String)
 }
 
 struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C: MacroExpansionContext> {
@@ -67,21 +68,9 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
         let responseKeyPath = funcDecl.attributes.findAttribute(named: "ResponseKeyPath")?.findLabel(named: nil)?.expression.trimmedDescription
         let flattedPath = try flatPath()
 
-        let encoder: String?
-        let decoder: String?
-        if let attribute = attributes.findAttribute(named: "FormUrlEncoded") {
-            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "URLEncodedFormEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "URLEncodedFormDecoder()"
-        } else if let attribute = attributes.findAttribute(named: "Multipart") {
-            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "MultipartEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "MultipartDecoder()"
-        } else if let attribute = attributes.findAttribute(named: "JSON") {
-            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "JSONEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
-        } else {
-            encoder = nil
-            decoder = nil
-        }
+        let codec = attributes.getCoderIdentifierType()
+        let encoder = codec.encoder
+        let decoder = codec.decoder
 
         var codes = [CodeBlockItemSyntax]()
         codes.append(
@@ -181,12 +170,33 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
         if let returnType = funcDecl.signature.returnClause?.type, returnType.trimmedDescription != "Void" {
             if let tuple = returnType.as(TupleTypeSyntax.self) {
                 codes.append("")
-                let converted = convertOneTuple(tuple)
+                let converted = try convertOneTuple(tuple)
                 codes.append(converted)
             } else if let array = returnType.as(ArrayTypeSyntax.self), let tuple = array.element.as(TupleTypeSyntax.self) {
                 codes.append("")
-                let converted = convertArrayTuple(tuple)
+                let converted = try convertArrayTuple(tuple)
                 codes.append(converted)
+            } else if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncStream" {
+                guard let genericType = type.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
+                    throw NetrofitError.returnTypeError("unknown AsyncStream genericArgument")
+                }
+                codes.append(
+                    """
+                    return try response.asyncStreaming(\(raw: genericType).self, using: builder.decoder)
+                    """
+                )
+            }  else if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncThrowingStream" {
+                guard let genericType = type.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
+                    throw NetrofitError.returnTypeError("unknown AsyncThrowingStream genericArgument")
+                }
+                guard let errorType = type.genericArgumentClause?.arguments.last?.argument.trimmedDescription else {
+                    throw NetrofitError.returnTypeError("unknown AsyncThrowingStream genericArgument")
+                }
+                codes.append(
+                    """
+                    return try response.asyncThrowingStreaming(\(raw: genericType).self, errorType: \(raw: errorType).self, using: builder.decoder)
+                    """
+                )
             } else {
                 codes.append(
                     """
@@ -235,7 +245,7 @@ extension MethodMacroParser {
                     if encoded {
                         text = funcArg.internalName
                     } else {
-                        text = #"String(describing: "\(\#(funcArg.internalName))".addingPercentEncoding(withAllowedCharacters: .urlPathAllowed))"#
+                        text = #"String(netrofitURLPathPart: \#(funcArg.internalName), encoded: \#(encoded))"#
                     }
                     comps[idx] = "\\(\(text))"
                 } else {
@@ -381,66 +391,115 @@ extension MethodMacroParser {
 }
 
 extension MethodMacroParser {
-    private func convertOneTuple(_ tuple: TupleTypeSyntax) -> CodeBlockItemSyntax {
-        let structName = "ResponseData"
-        let structCode = makeTupleStructCode(tuple)
-        let codeBlock: CodeBlockItemSyntax = """
-        struct \(raw: structName): Codable {
-            \(raw: structCode.propertiesCode)
-        }
-        let responseData = try response.decode(\(raw: structName).self, using: builder.decoder)
-        return (\(raw: structCode.tupleCode))
-        """
-        return codeBlock
-    }
-
-    private func convertArrayTuple(_ tuple: TupleTypeSyntax) -> CodeBlockItemSyntax {
-        let structName = "ResponseData"
-        let structCode = makeTupleStructCode(tuple)
-        let codeBlock: CodeBlockItemSyntax = """
-        struct \(raw: structName): Codable {
-            \(raw: structCode.propertiesCode)
-        }
-        let array = try response.decode([\(raw: structName)].self, using: builder.decoder)
-        return array.map({ responseData in 
-            (\(raw: structCode.tupleCode)) 
-        })
-        """
-        return codeBlock
-    }
-
-    // TODO: 递归多层嵌套
-    private func makeTupleStructCode(_ tuple: TupleTypeSyntax) -> (propertiesCode: String, tupleCode: String) {
+    private func tupleToStructRecursively(
+        _ tupleType: TupleTypeSyntax,
+        structName: String
+    ) throws -> (
+        structDecl: StructDeclSyntax,
+        tupleAccessCode: String,
+        subStructs: [StructDeclSyntax]
+    ) {
         var properties: [String] = []
         var tupleElements: [String] = []
+        var subStructs: [StructDeclSyntax] = []
 
-        for (index, element) in tuple.elements.enumerated() {
-            let argIndex = index + 1
-            let propertyName: String
-
-            // 检查是否有标签
-            if let firstName = element.firstName?.text {
-                propertyName = firstName
-            } else {
-                propertyName = "arg\(argIndex)"
+        for (index, element) in tupleType.elements.enumerated() {
+            guard let label = element.firstName?.text else {
+                throw NetrofitError.returnTypeError("Tuple element at index \(index) must have a label")
             }
 
-            let typeDescription = element.type.trimmedDescription
+            let typeSyntax = element.type
+            let typeDesc = typeSyntax.trimmedDescription
 
-            // 添加到属性列表
-            properties.append("var \(propertyName): \(typeDescription)")
+            // 嵌套 tuple
+            if let nestedTuple = typeSyntax.as(TupleTypeSyntax.self) {
+                let nestedName = context.makeUniqueName("NestedTuple").text
+                let nestedResult = try tupleToStructRecursively(
+                    nestedTuple,
+                    structName: nestedName
+                )
 
-            // 添加到元组元素列表（用于构造返回的元组）
-            if element.firstName != nil {
-                tupleElements.append("\(propertyName): responseData.\(propertyName)")
-            } else {
-                tupleElements.append("responseData.\(propertyName)")
+                subStructs.append(nestedResult.structDecl)
+                subStructs.append(contentsOf: nestedResult.subStructs)
+
+                properties.append("var \(label): \(nestedName)")
+
+                // 递归展开
+                tupleElements.append("\(label): (\(nestedResult.tupleAccessCode.replacingOccurrences(of: "responseData", with: "responseData.\(label)")))")
+            }
+            // 数组中包含 tuple
+            else if let arrayType = typeSyntax.as(ArrayTypeSyntax.self),
+                    let nestedTuple = arrayType.element.as(TupleTypeSyntax.self)
+            {
+                let nestedName = context.makeUniqueName("NestedTuple").text
+                let nestedResult = try tupleToStructRecursively(
+                    nestedTuple,
+                    structName: nestedName
+                )
+
+                subStructs.append(nestedResult.structDecl)
+                subStructs.append(contentsOf: nestedResult.subStructs)
+
+                properties.append("var \(label): [\(nestedName)]")
+
+                tupleElements.append("""
+                \(label): responseData.\(label).map { inner in 
+                    (\(nestedResult.tupleAccessCode.replacingOccurrences(of: "responseData", with: "inner")))
+                }
+                """)
+            }
+            // 普通类型
+            else {
+                properties.append("var \(label): \(typeDesc)")
+                tupleElements.append("\(label): responseData.\(label)")
             }
         }
 
         let propertiesCode = properties.joined(separator: "\n    ")
+        let structDecl: DeclSyntax = """
+        struct \(raw: structName): Codable {
+            \(raw: propertiesCode)
+        }
+        """
+
         let tupleCode = tupleElements.joined(separator: ", ")
 
-        return (propertiesCode, tupleCode)
+        return (structDecl.cast(StructDeclSyntax.self), tupleCode, subStructs)
+    }
+
+    private func convertOneTuple(_ tuple: TupleTypeSyntax) throws -> CodeBlockItemSyntax {
+        let rootStructName = context.makeUniqueName("ResponseData").text
+        let (rootStruct, tupleCode, subStructs) = try tupleToStructRecursively(tuple, structName: rootStructName)
+
+        let structDeclsCode = ([rootStruct] + subStructs)
+            .map { $0.description }
+            .joined(separator: "\n\n")
+
+        let codeBlock: CodeBlockItemSyntax = """
+        \(raw: structDeclsCode)
+
+        let responseData = try response.decode(\(raw: rootStructName).self, using: builder.decoder)
+        return (\(raw: tupleCode))
+        """
+        return codeBlock
+    }
+
+    private func convertArrayTuple(_ tuple: TupleTypeSyntax) throws -> CodeBlockItemSyntax {
+        let rootStructName = context.makeUniqueName("ResponseData").text
+        let (rootStruct, tupleCode, subStructs) = try tupleToStructRecursively(tuple, structName: rootStructName)
+
+        let structDeclsCode = ([rootStruct] + subStructs)
+            .map { $0.description }
+            .joined(separator: "\n\n")
+
+        let codeBlock: CodeBlockItemSyntax = """
+        \(raw: structDeclsCode)
+
+        let array = try response.decode([\(raw: rootStructName)].self, using: builder.decoder)
+        return array.map { responseData in 
+            (\(raw: tupleCode))
+        }
+        """
+        return codeBlock
     }
 }

@@ -14,4 +14,12 @@ public struct NetrofitResponse {
     public func decode<T: Decodable>(_ type: T.Type, using: HTTPBodyDecoder) throws -> T {
         fatalError()
     }
+
+    public func asyncStreaming<T: Decodable>(_ type: T.Type, using: HTTPBodyDecoder) throws -> AsyncStream<T> {
+        fatalError()
+    }
+
+    public func asyncThrowingStreaming<T: Decodable, E: Error>(_ type: T.Type, errorType: E.Type, using: HTTPBodyDecoder) throws -> AsyncThrowingStream<T, E> {
+        fatalError()
+    }
 }

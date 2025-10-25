@@ -11,7 +11,7 @@ public macro API() = #externalMacro(module: "NetrofitMacros", type: "APIMacro")
 public macro Headers(_ headers: [String: String]) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 @attached(body)
-public macro ResponseKeyPath(_ path: String) = #externalMacro(module: "NetrofitMacros", type: "MethodMacro")
+public macro ResponseKeyPath(_ path: String) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 @attached(peer)
 public macro JSON(
@@ -39,8 +39,8 @@ public macro Multipart(
 
 @attached(peer)
 public macro Streaming(
-    encoder: HTTPBodyEncoder = JSONEncoder(),
-    decoder: HTTPBodyDecoder = JSONDecoder()
+    encoder: HTTPBodyEncoder = StreamingEncoder(),
+    decoder: HTTPBodyDecoder = StreamingDecoder()
 ) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 // MARK: Method

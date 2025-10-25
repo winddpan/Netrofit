@@ -41,7 +41,7 @@ struct QueryTest {
     // GET /group?id=...
 
     @GET("/group/{id}/users")
-    func groupList(id: Int, sort: String) async throws -> [User]
+    func groupList(id: Int?, sort: String) async throws -> [User]
     // GET /group/42/users?sort=...
 
     @GET("/search")
@@ -167,7 +167,7 @@ struct MultipartTest {
     // 支持自定义 encoder 和 decoder
     @Multipart(encoder: MultipartEncoder(), decoder: MultipartDecoder())
     @POST("/upload")
-    func uploadFile(file: URL, meta: [String: String]) async throws
+    func uploadFile(file: Data, meta: [String: String]) async throws
     // POST /upload (multipart: file,meta)
 }
 
@@ -204,4 +204,110 @@ struct ResponseKeyPathTest {
     @GET("/users")
     func listUsers() async throws -> [User]
     // GET /users (response key path: data.list)
+}
+
+@API
+struct TupleResultComplexTest {
+    // 基础：单层 tuple
+    @GET("/profile")
+    func getProfile() async throws -> (id: String, username: String, email: String)
+
+    // 二级嵌套 tuple
+    @GET("/order")
+    func getOrder() async throws -> (
+        orderId: String,
+        user: (id: String, name: String),
+        itemsCount: Int
+    )
+
+    // 二级嵌套 + tuple 数组
+    @GET("/user/orders")
+    func getOrders() async throws -> (
+        orders: [(orderId: String, total: Double)],
+        totalCount: Int
+    )
+
+    // 三级嵌套：tuple 内含数组，数组元素又是 tuple
+    @GET("/company/{id}")
+    func getCompanyInfo(id: String) async throws -> (
+        companyId: String,
+        name: String,
+        departments: [
+            (
+                depId: String,
+                depName: String,
+                members: [(memberId: String, memberName: String)]
+            )
+        ]
+    )
+
+    // 深度嵌套：嵌套 Struct 模式
+    @GET("/school")
+    func getSchoolDetail() async throws -> (
+        schoolId: String,
+        name: String,
+        address: (street: String, city: String),
+        classes: [
+            (
+                classId: String,
+                teacher: (teacherId: String, teacherName: String),
+                students: [(stuId: String, stuName: String)]
+            )
+        ]
+    )
+
+    // 复杂组合：包含可选类型
+    @GET("/product")
+    func getProductDetail() async throws -> (
+        productId: String,
+        title: String,
+        category: (catId: String, catName: String?),
+        reviews: [
+            (
+                reviewId: String,
+                rating: Int,
+                comment: String?
+            )
+        ]
+    )
+
+    // 数组嵌套 tuple 多层
+    @GET("/matrix")
+    func getMatrixData() async throws -> (
+        pages: [
+            (
+                index: Int,
+                rows: [
+                    (rowId: String, cells: [(cellId: String, value: String)])
+                ]
+            )
+        ],
+        count: Int
+    )
+
+    // 参数名缺失（应抛异常）
+    // 这个用例为了测试宏的异常路径，可以放在单独测试文件
+//    @GET("/invalid")
+//    func getInvalidTuple() async throws -> (String, Int) // 没有参数名
+}
+
+@API
+struct AsyncStreamTest {
+    @Streaming
+    @GET("/events/stream")
+    func listenEvents(roomID: String) async throws -> AsyncStream<String>
+    // GET /events/stream?roomID=... 持续推送 Event
+
+    @Streaming
+    @GET("/events/stream")
+    func listenEventsThrowing(roomID: String) async throws -> AsyncThrowingStream<String, Error>
+    // GET /events/stream?roomID=... 持续推送 Event
+
+    class MyStreamingEncoder: StreamingEncoder {}
+    class MyStreamingDecoder: StreamingDecoder {}
+
+    @Streaming(encoder: MyStreamingEncoder(), decoder: MyStreamingDecoder())
+    @GET("/events/stream")
+    func listenEventsThrowing2(roomID: String) async throws -> AsyncThrowingStream<String, Error>
+    // GET /events/stream?roomID=... 持续推送 Event
 }

@@ -12,21 +12,9 @@ struct APIMacro: MemberMacro {
         }
         let headers = attributes?.findAttribute(named: "Headers")?.arguments?.trimmed.description ?? "nil"
 
-        let encoder: String
-        let decoder: String
-        if let attribute = attributes?.findAttribute(named: "FormUrlEncoded") {
-            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "URLEncodedFormEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "URLEncodedFormDecoder()"
-        } else if let attribute = attributes?.findAttribute(named: "Multipart") {
-            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "MultipartEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "MultipartDecoder()"
-        } else if let attribute = attributes?.findAttribute(named: "JSON") {
-            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "JSONEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
-        } else {
-            encoder = "JSONEncoder()"
-            decoder = "JSONDecoder()"
-        }
+        let codec = attributes?.getCoderIdentifierType()
+        let encoder = codec?.encoder ?? "JSONEncoder()"
+        let decoder = codec?.decoder ?? "JSONDecoder()"
 
         let ifPublic = declaration.modifiers.contains(where: {
             $0.name.text == "public" || $0.name.text == "open"

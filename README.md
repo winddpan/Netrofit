@@ -294,7 +294,7 @@ func listUsers() async throws -> [User]
 
 ---
 
-### 11. 返回值支持 tuple（包括嵌套 tuple）
+### 11. 返回值支持 tuple（包括多级嵌套 tuple）
 
  支持返回值为 tuple，且 tuple 可以嵌套。  
 每个 tuple 元素会按顺序映射对应的响应数据部分（例如通过多分部解析器或批量请求返回）。
@@ -313,7 +313,7 @@ func getUserList() async throws -> (list: [(id: String, name: String)], count: I
 
 ### 12. Streaming 实时返回（AsyncStream）
 
-- `@Streaming` 标注让客户端保持长连接，适用于 WebSocket、Server-Sent Events 等持续推送的场景。
+- `@Streaming` 标注让客户端保持长连接，适用于 Server-Sent Events 等持续推送的场景。
 - 方法返回 `AsyncStream`（或 `AsyncThrowingStream`）来逐条消费服务端事件，配合 `for await` 监听即可。
 
 ```swift
@@ -350,16 +350,14 @@ for await event in try await api.listenEvents(roomID: "chat") {
 Body
 
 1. **默认编码规则**  
-   - JSON 为默认 body 编码。
+   - JSON `application/json` 为默认 body 编码。
    - URL Encoding 为默认 query 参数编码。
 
 
 ---
 
-### 13. 额外支持
-
-- **默认方法**：无注解则默认为 `application/json`。
-- **Async & Combine**：既支持 `async/await`，也可返回 `Publisher`。
+### 14. 额外支持
+- **TODO: Async & Combine**：既支持 `async/await`，也可返回 `Publisher`。
 - **Global Interceptors**：可注册 header、logging、auth 拦截器。
 
 ---

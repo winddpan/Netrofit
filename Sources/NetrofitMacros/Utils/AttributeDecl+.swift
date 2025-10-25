@@ -18,3 +18,24 @@ extension AttributeSyntax {
         return nil
     }
 }
+
+extension AttributeListSyntax {
+    func getCoderIdentifierType() -> (encoder: String?, decoder: String?) {
+        var encoder: String?
+        var decoder: String?
+        if let attribute = findAttribute(named: "FormUrlEncoded") {
+            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "URLEncodedFormEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "URLEncodedFormDecoder()"
+        } else if let attribute = findAttribute(named: "Multipart") {
+            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "MultipartEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "MultipartDecoder()"
+        } else if let attribute = findAttribute(named: "JSON") {
+            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "JSONEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
+        } else if let attribute = findAttribute(named: "Streaming") {
+            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "StreamingEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "StreamingDecoder()"
+        }
+        return (encoder, decoder)
+    }
+}
