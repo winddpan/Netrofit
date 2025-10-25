@@ -5,13 +5,29 @@ open class MultipartEncoder: HTTPBodyEncoder {
     public let boundary: String
     public let crlf = "\r\n"
 
-    public func encode<E>(_ value: E) throws -> Data where E: Encodable {
-        fatalError()
-    }
-
     public init(boundary: String? = nil) {
         self.boundary = boundary ?? .randomMultipartBoundary()
     }
+
+    open func encode<E>(_ value: E) throws -> Data where E: Encodable {
+        fatalError()
+    }
+
+//    private func partHeaderData(_ part: Part, key: String) -> Data {
+//        var disposition = "form-data; name=\"\(key)\""
+//        if let fileName = part.fileName {
+//            disposition += "; filename=\"\(fileName)\""
+//        }
+//
+//        var headers = ["Content-Disposition": disposition]
+//        if let mimeType = part.mimeType {
+//            headers["Content-Type"] = mimeType
+//        }
+//
+//        let string = headers.map { "\($0): \($1)\(crlf)" }.sorted().joined() + crlf
+//        return Data(string.utf8)
+//    }
+
 //
 //    open func encode(_ value: some Encodable) throws -> Data {
 //        guard let parts = value as? [String: Part] else {

@@ -311,15 +311,20 @@ func getUserList() async throws -> (list: [(id: String, name: String)], count: I
 
 ---
 
-### 12. Streaming 实时返回（AsyncStream）
+### 12. Streaming（AsyncStream）
 
-- `@Streaming` 标注让客户端保持长连接，适用于 Server-Sent Events 等持续推送的场景。
+- `@Streaming` 标注让客户端保持长连接，适用于 Server-Sent Events 持续推送的场景。
 - 方法返回 `AsyncStream`（或 `AsyncThrowingStream`）来逐条消费服务端事件，配合 `for await` 监听即可。
 
 ```swift
 @Streaming
 @GET("/events/stream")
-func listenEvents(roomID: String) async throws -> AsyncStream<Event>
+func listenEvents(roomID: String) async throws -> AsyncStream<String>
+// GET /events/stream?roomID=... 持续推送 Event
+
+@Streaming
+@GET("/events/stream")
+func listenEventsThrowing(roomID: String) async throws -> AsyncThrowingStream<String, Error>
 // GET /events/stream?roomID=... 持续推送 Event
 
 for await event in try await api.listenEvents(roomID: "chat") {

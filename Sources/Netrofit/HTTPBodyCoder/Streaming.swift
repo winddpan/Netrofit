@@ -2,7 +2,7 @@ import Foundation
 
 open class StreamingEncoder: HTTPBodyEncoder {
     open var contentType: String {
-        "application/x-www-form-urlencoded"
+        "text/event-stream"
     }
 
     open func encode<E>(_ value: E) throws -> Data where E: Encodable {

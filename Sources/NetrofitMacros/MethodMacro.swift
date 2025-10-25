@@ -30,11 +30,11 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
     let pathComps: [String]
     let funcDecl: FunctionDeclSyntax
     let method: String
-    let contextPlayloadFormat: PayloadFormat?
-    let playloadFormat: PayloadFormat?
+    let contextpayloadFormat: PayloadFormat?
+    let payloadFormat: PayloadFormat?
 
     var runtimePayloadFormat: PayloadFormat {
-        playloadFormat ?? contextPlayloadFormat ?? .JSON
+        payloadFormat ?? contextpayloadFormat ?? .JSON
     }
 
     var variblePathComps: [String] {
@@ -53,13 +53,13 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
         method = node.attributeName.trimmedDescription
 
         if let structDecl = context.lexicalContext.first?.as(StructDeclSyntax.self) {
-            contextPlayloadFormat = structDecl.attributes.payloadFormat
+            contextpayloadFormat = structDecl.attributes.payloadFormat
         } else if let classDecl = context.lexicalContext.first?.as(ClassDeclSyntax.self) {
-            contextPlayloadFormat = classDecl.attributes.payloadFormat
+            contextpayloadFormat = classDecl.attributes.payloadFormat
         } else {
             throw NetrofitError.contextError("\(method) using in struct/class!")
         }
-        playloadFormat = funcDecl.attributes.payloadFormat
+        payloadFormat = funcDecl.attributes.payloadFormat
     }
 
     func expansion() throws -> [CodeBlockItemSyntax] {
@@ -76,7 +76,7 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
         codes.append(
             """
             var builder = builder(path: \(raw: flattedPath), method: "\(raw: method)")
-            builder.playloadFormat = \(raw: runtimePayloadFormat.rawValue.addingQuotes())
+            builder.payloadFormat = \(raw: runtimePayloadFormat.rawValue.addingQuotes())
             """
         )
 
@@ -162,30 +162,22 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
 
         codes.append(
             """
-            let response = try await self.provider.request(builder)
-            try response.validate()
+            let task = try self.provider.task(with: builder)
+            task.resume()
             """
         )
 
         if let returnType = funcDecl.signature.returnClause?.type, returnType.trimmedDescription != "Void" {
-            if let tuple = returnType.as(TupleTypeSyntax.self) {
-                codes.append("")
-                let converted = try convertOneTuple(tuple)
-                codes.append(converted)
-            } else if let array = returnType.as(ArrayTypeSyntax.self), let tuple = array.element.as(TupleTypeSyntax.self) {
-                codes.append("")
-                let converted = try convertArrayTuple(tuple)
-                codes.append(converted)
-            } else if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncStream" {
+            if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncStream" {
                 guard let genericType = type.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
                     throw NetrofitError.returnTypeError("unknown AsyncStream genericArgument")
                 }
                 codes.append(
                     """
-                    return try response.asyncStreaming(\(raw: genericType).self, using: builder.decoder)
+                    return try task.connectStream(\(raw: genericType).self, using: builder.decoder)
                     """
                 )
-            }  else if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncThrowingStream" {
+            } else if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncThrowingStream" {
                 guard let genericType = type.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
                     throw NetrofitError.returnTypeError("unknown AsyncThrowingStream genericArgument")
                 }
@@ -194,15 +186,32 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
                 }
                 codes.append(
                     """
-                    return try response.asyncThrowingStreaming(\(raw: genericType).self, errorType: \(raw: errorType).self, using: builder.decoder)
+                    return try task.connectThrowingStream(\(raw: genericType).self, errorType: \(raw: errorType).self, using: builder.decoder)
                     """
                 )
             } else {
                 codes.append(
                     """
-                    return try response.decode(\(raw: returnType).self, using: builder.decoder)
+                    let response = await task.waitUntilFinished()
+                    try response.validate()
                     """
                 )
+
+                if let tuple = returnType.as(TupleTypeSyntax.self) {
+                    codes.append("")
+                    let converted = try convertOneTuple(tuple)
+                    codes.append(converted)
+                } else if let array = returnType.as(ArrayTypeSyntax.self), let tuple = array.element.as(TupleTypeSyntax.self) {
+                    codes.append("")
+                    let converted = try convertArrayTuple(tuple)
+                    codes.append(converted)
+                } else {
+                    codes.append(
+                        """
+                        return try response.decode(\(raw: returnType).self, using: builder.decoder)
+                        """
+                    )
+                }
             }
         }
 

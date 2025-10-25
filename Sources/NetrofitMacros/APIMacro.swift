@@ -21,9 +21,9 @@ struct APIMacro: MemberMacro {
         })
 
         let provider: DeclSyntax = """
-        private let provider: Netrofit.Provider
+        private let provider: Netrofit.NetrofitProvider
 
-        \(raw: ifPublic ? "public init" : "init")(_ provider: Netrofit.Provider) {
+        \(raw: ifPublic ? "public init" : "init")(_ provider: Netrofit.NetrofitProvider) {
             self.provider = provider
         }
 

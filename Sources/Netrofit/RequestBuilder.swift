@@ -6,7 +6,8 @@ public struct RequestBuilder {
     public var encoder: HTTPBodyEncoder
     public var decoder: HTTPBodyDecoder
     public var headers: [String: String]?
-    public var playloadFormat: String = "JSON"
+    public var responseKeyPath: String?
+    public var payloadFormat: String = "JSON"
 
     public init(path: String, method: String, encoder: HTTPBodyEncoder, decoder: HTTPBodyDecoder, headers: [String: String]? = nil) {
         self.path = path
@@ -16,11 +17,9 @@ public struct RequestBuilder {
         self.headers = headers
     }
 
-
     public mutating func setResponseKeyPath(_ path: String) {
-
+        responseKeyPath = path
     }
-
 
     public mutating func addHeaders(_ newHeaders: [String: String]?) {
         if let headers {
@@ -30,9 +29,11 @@ public struct RequestBuilder {
         }
     }
 
-
     public mutating func addHeader(_ key: String, value: String?) {
-
+        guard let value else { return }
+        var headers = self.headers ?? [:]
+        headers[key] = value
+        self.headers = headers
     }
 
     public mutating func addQuery(_ newHeaders: [String: String]?) {
@@ -45,22 +46,17 @@ public struct RequestBuilder {
 
     public mutating func addQuery<T: CustomStringConvertible>(_ key: String, value: T?, encoded: Bool) {
         guard let value else { return }
-
     }
 
-    public mutating func setBody<T: Encodable>(_ body: T?) {
+    public mutating func setBody<T: Encodable>(_ body: T?) {}
 
+    public mutating func addField<E: Encodable>(_ key: String, value: E) {}
 
+    public mutating func addPart<E: Encodable>(_ name: String, value: E, filename: String?, mimeType: String?) {}
+}
+
+extension RequestBuilder {
+    public func bodyData() throws -> Data? {
+        nil
     }
-
-    public mutating func addField<E: Encodable>(_ key: String, value: E) {
-
-    }
-
-
-    public mutating func addPart<E: Encodable>(_ name: String, value: E, filename: String?, mimeType: String?) {
-
-    }
-
-
 }
