@@ -6,7 +6,7 @@ public enum EventStreamingDecoderError: Error {
 }
 
 open class EventStreamingDecoder: HTTPBodyDecoder {
-    open func decodeBody<D>(_ type: D.Type, from data: Data, contentType: String?) throws -> D where D: Decodable {
+    open func decodeBody<D>(_ type: D.Type, from data: Data, contentType: String?, deocdeKeyPath: String?) throws -> D where D: Decodable {
         guard var line = String(data: data, encoding: .utf8) else {
             throw EventStreamingDecoderError.emptyResponseData
         }

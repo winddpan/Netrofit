@@ -1,7 +1,7 @@
 import Netrofit
 import XCTest
 
-private let provider = NetrofitProvider(baseURL: "https://open.bigmodel.cn")
+private let provider = NetrofitProvider(baseURL: "https://open.bigmodel.cn", plugins: [LogInterceptors()])
 
 struct Message: Codable {
     let role: String
@@ -9,10 +9,10 @@ struct Message: Codable {
 }
 
 @API
-@Headers(["Authorization": "Bearer f6447b8b2b434dcbbd237ec8d7f56180.HXWdENeBbinRuuSP"])
 struct LLMAPI {
     @POST("api/paas/v4/chat/completions")
     @EventStreaming
+    @Headers(["Authorization": "Bearer f6447b8b2b434dcbbd237ec8d7f56180.HXWdENeBbinRuuSP"])
     func completions(model: String, messages: [Message], stream: Bool = true) async throws -> AsyncStream<String>
 }
 

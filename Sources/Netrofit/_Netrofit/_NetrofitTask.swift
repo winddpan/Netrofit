@@ -13,7 +13,7 @@ final class _NetrofitTask: NetrofitTask, Hashable {
     }
 
     private enum ContinuationKind {
-        case response(CheckedContinuation<any NetrofitResponse, Never>)
+        case response(CheckedContinuation<NetrofitResponse, Never>)
         case stream(StreamWrapper)
         case throwingStream(ThrowingStreamWrapper)
     }
@@ -33,8 +33,9 @@ final class _NetrofitTask: NetrofitTask, Hashable {
     let uuid = UUID()
     let urlSession: URLSession
     let request: URLRequest
-
+    let plugins: [NetrofitPlugin]
     var urlResponse: URLResponse?
+
     private(set) var responseData = Data()
     private(set) var dataTask: URLSessionDataTask?
 
@@ -42,9 +43,10 @@ final class _NetrofitTask: NetrofitTask, Hashable {
     private var continuations: [ContinuationKind] = []
     private var lineBuffer = Data() // Buffer for accumulating incomplete lines in SSE streaming
 
-    init(urlSession: URLSession, request: URLRequest) {
+    init(urlSession: URLSession, request: URLRequest, plugins: [NetrofitPlugin]) {
         self.urlSession = urlSession
         self.request = request
+        self.plugins = plugins
     }
 
     func resume() {
@@ -54,29 +56,38 @@ final class _NetrofitTask: NetrofitTask, Hashable {
         dataTask = task
     }
 
-    func waitUntilFinished() async -> any NetrofitResponse {
+    func waitUntilFinished() async -> NetrofitResponse {
         await withCheckedContinuation { continuation in
             continuations.append(.response(continuation))
         }
     }
 
+    func decode<T: Decodable>(_ type: T.Type, response: NetrofitResponse, using builder: RequestBuilder) throws -> T {
+        guard let body = response.body else {
+            throw NetrofitResponseError.decodingEmptyDataError
+        }
+        return try builder.decoder
+            .decodeBody(type, from: body, contentType: response.headers?["Content-Type"], deocdeKeyPath: builder.responseKeyPath)
+    }
+
     func connectStream<T>(
         _ type: T.Type,
-        using decoder: any HTTPBodyDecoder
+        using builder: RequestBuilder
     ) throws -> AsyncStream<T> where T: Decodable {
         guard state == .idle else {
             throw NetrofitTaskError.multipleStreamsUnsupported
         }
 
         state = .streaming
-
+        let decoder = builder.decoder
+        let deocdeKeyPath = builder.responseKeyPath
         return AsyncStream<T> { continuation in
             let wrapper = StreamWrapper(
                 decoder: decoder,
                 yield: { [weak self] chunk in
                     do {
                         let contentType = (self?.urlResponse as? HTTPURLResponse)?.allHeaderFields["Content-Type"] as? String
-                        let value = try decoder.decodeBody(T.self, from: chunk, contentType: contentType)
+                        let value = try decoder.decodeBody(T.self, from: chunk, contentType: contentType, deocdeKeyPath: deocdeKeyPath)
                         continuation.yield(value)
                     } catch {
                         continuation.finish()
@@ -92,14 +103,15 @@ final class _NetrofitTask: NetrofitTask, Hashable {
 
     func connectThrowingStream<T>(
         _ type: T.Type,
-        using decoder: any HTTPBodyDecoder
+        using builder: RequestBuilder
     ) throws -> AsyncThrowingStream<T, Error> where T: Decodable {
         guard state == .idle else {
             throw NetrofitTaskError.multipleStreamsUnsupported
         }
 
         state = .streaming
-
+        let decoder = builder.decoder
+        let deocdeKeyPath = builder.responseKeyPath
         return AsyncThrowingStream(T.self) { continuation in
             let wrapper = ThrowingStreamWrapper(
                 decoder: decoder,
@@ -108,7 +120,7 @@ final class _NetrofitTask: NetrofitTask, Hashable {
                     case let .success(chunk):
                         do {
                             let contentType = (self?.urlResponse as? HTTPURLResponse)?.allHeaderFields["Content-Type"] as? String
-                            let value = try decoder.decodeBody(T.self, from: chunk, contentType: contentType)
+                            let value = try decoder.decodeBody(T.self, from: chunk, contentType: contentType, deocdeKeyPath: deocdeKeyPath)
                             continuation.yield(value)
                         } catch {
                             continuation.finish(throwing: NetrofitTaskError.unexpectedDecodingError(error))
@@ -151,9 +163,9 @@ final class _NetrofitTask: NetrofitTask, Hashable {
             if lineData.isEmpty {
                 yield = false
             }
-            if lineData.count == 1, lineData.first == newline {
-                yield = false
-            }
+            // if lineData.count == 1, lineData.first == newline {
+            //     yield = false
+            // }
             if yield {
                 // Yield the complete line to all stream continuations
                 for continuation in continuations {
@@ -192,11 +204,15 @@ final class _NetrofitTask: NetrofitTask, Hashable {
             return (k, v)
         }.reduce(into: [String: String]()) { $0[$1.0] = $1.1 }
 
-        var response = _NetrofitResponse(request: request)
+        var response = NetrofitResponse(request: request)
         response.error = error
         response.body = responseData
         response.headers = headers
         response.statusCode = httpResponse?.statusCode
+
+        for plugin in plugins {
+            response = plugin.processResponse(response)
+        }
 
         // Process any remaining buffered data before finishing stream
         if state == .streaming && !lineBuffer.isEmpty {

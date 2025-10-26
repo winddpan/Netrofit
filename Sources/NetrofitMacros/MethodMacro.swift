@@ -169,23 +169,29 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
             """
         )
 
-        if let returnType = funcDecl.signature.returnClause?.type, returnType.trimmedDescription != "Void" {
-            if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncStream" {
-                guard let genericType = type.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
+        let returnType = funcDecl.signature.returnClause?.type
+        let returnTypeDesc = returnType?.as(IdentifierTypeSyntax.self)?.name.text
+        if runtimePayloadFormat == .EventStreaming, !["AsyncStream", "AsyncThrowingStream"].contains(returnTypeDesc) {
+            throw NetrofitError.returnTypeError("@EventStreaming should return -> AsyncStream/AsyncThrowingStream")
+        }
+
+        if let returnType, returnTypeDesc != "Void" {
+            if returnTypeDesc == "AsyncStream" {
+                guard let genericType = returnType.as(IdentifierTypeSyntax.self)?.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
                     throw NetrofitError.returnTypeError("invaild AsyncStream genericArgument")
                 }
                 codes.append(
                     """
-                    return try task.connectStream(\(raw: genericType).self, using: builder.decoder)
+                    return try task.connectStream(\(raw: genericType).self, using: builder)
                     """
                 )
-            } else if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncThrowingStream" {
-                guard let genericType = type.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
+            } else if returnTypeDesc == "AsyncThrowingStream" {
+                guard let genericType = returnType.as(IdentifierTypeSyntax.self)?.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
                     throw NetrofitError.returnTypeError("invaild AsyncThrowingStream genericArgument")
                 }
                 codes.append(
                     """
-                    return try task.connectThrowingStream(\(raw: genericType).self, using: builder.decoder)
+                    return try task.connectThrowingStream(\(raw: genericType).self, using: builder)
                     """
                 )
             } else {
@@ -206,7 +212,7 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
                 } else {
                     codes.append(
                         """
-                        return try response.decode(\(raw: returnType).self, using: builder.decoder)
+                        return try task.decode(\(raw: returnType).self, response: response, using: builder)
                         """
                     )
                 }
@@ -221,7 +227,7 @@ extension MethodMacroParser {
     func vaildAsyncThrowSpecifiers() throws {
         let desc = funcDecl.signature.effectSpecifiers?.trimmedDescription ?? ""
         guard desc.components(separatedBy: " ").filter({ !$0.isEmpty }).joined(separator: " ") == "async throws" else {
-            throw NetrofitError.contextError("missing 'async throws'")
+            throw NetrofitError.contextError("missing: async throws")
         }
     }
 }
@@ -501,7 +507,7 @@ extension MethodMacroParser {
         let codeBlock: CodeBlockItemSyntax = """
         \(raw: structDeclsCode)
 
-        let responseData = try response.decode(\(raw: rootStructName).self, using: builder.decoder)
+        let responseData = try task.decode(\(raw: rootStructName).self, response: response, using: builder)
         return (\(raw: tupleCode))
         """
         return codeBlock
@@ -518,7 +524,7 @@ extension MethodMacroParser {
         let codeBlock: CodeBlockItemSyntax = """
         \(raw: structDeclsCode)
 
-        let array = try response.decode([\(raw: rootStructName)].self, using: builder.decoder)
+        let array = try task.decode([\(raw: rootStructName)].self, response: response, using: builder)
         return array.map { responseData in 
             (\(raw: tupleCode))
         }

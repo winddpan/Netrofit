@@ -10,7 +10,7 @@ public macro API() = #externalMacro(module: "NetrofitMacros", type: "APIMacro")
 @attached(peer)
 public macro Headers(_ headers: [String: String]) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
-@attached(body)
+@attached(peer)
 public macro ResponseKeyPath(_ path: String) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 @attached(peer)

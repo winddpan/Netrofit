@@ -103,7 +103,7 @@ extension RequestBuilder {
         }
 
         var urlCompoments = URLComponents(string: urlStr)
-        urlCompoments?.queryItems = queryItems
+        urlCompoments?.queryItems = queryItems.isEmpty ? nil : queryItems
         if let url = urlCompoments?.url {
             return url
         }

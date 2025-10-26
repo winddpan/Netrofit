@@ -1,54 +1,33 @@
 import Foundation
 
-public protocol NetrofitInterceptor {
-    typealias Next = (inout RequestBuilder) throws -> NetrofitTask
-    func intercept(builder: inout RequestBuilder, next: Next) throws -> NetrofitTask
-}
-
-/// Makes URL requests.
 public final class NetrofitProvider {
     public let baseURL: String
     public let session: NetrofitSession
-    public var interceptors: [NetrofitInterceptor] = []
+    public var plugins: [NetrofitPlugin] = []
 
-    public init(baseURL: String, session: NetrofitSession, interceptors: [NetrofitInterceptor] = []) {
+    public init(baseURL: String, session: NetrofitSession, plugins: [NetrofitPlugin] = []) {
         self.baseURL = baseURL
         self.session = session
-        self.interceptors = interceptors
+        self.plugins = plugins
     }
 
     public func task(with builder: RequestBuilder) throws -> NetrofitTask {
-        let raw: NetrofitInterceptor.Next = { builder in
-            let url = try builder.fullURL(baseURL: self.baseURL)
-            let headers = builder.fullHeaders()
-            let body = try builder.bodyData()
-            let method = builder.method
-            return self.session.createTask(method: method, url: url, headers: headers, body: body)
-        }
-
-        var next = raw
-        for interceptor in interceptors.reversed() {
-            let _next = next
-            next = { req in
-                try interceptor.intercept(builder: &req, next: _next)
-            }
-        }
-
         var builder = builder
-        return try next(&builder)
-    }
+        for plugin in plugins {
+            try plugin.prepareRequest(&builder)
+        }
 
-//    @discardableResult
-//    public func intercept(action: @escaping (inout RequestBuilder, Interceptor.Next) async throws -> NetrofitTask) -> Self {
-//        struct AnonymousInterceptor: Interceptor {
-//            let action: (inout RequestBuilder, Interceptor.Next) async throws -> NetrofitTask
-//
-//            func intercept(builder: inout RequestBuilder, next: (inout RequestBuilder) async throws -> NetrofitTask) async throws -> NetrofitTask {
-//                try await action(&builder, next)
-//            }
-//        }
-//
-//        interceptors.append(AnonymousInterceptor(action: action))
-//        return self
-//    }
+        let url = try builder.fullURL(baseURL: baseURL)
+        let headers = builder.fullHeaders()
+        let body = try builder.bodyData()
+        let method = builder.method
+
+        return session.createTask(
+            method: method,
+            url: url,
+            headers: headers,
+            body: body,
+            plugins: plugins
+        )
+    }
 }

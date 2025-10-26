@@ -1,7 +1,7 @@
 import Netrofit
 import XCTest
 
-private let httpbinProvider = NetrofitProvider(baseURL: "https://httpbin.org")
+private let httpbinProvider = NetrofitProvider(baseURL: "https://httpbin.org", plugins: [LogInterceptors()])
 
 // MARK: - HTTPBin Response Models
 
@@ -65,6 +65,10 @@ struct HTTPBinAPI {
     /// Test POST request with JSON body
     @POST("/post")
     func postJSON(_ body: [String: String]) async throws -> HTTPBinPostResponse
+
+    @POST("/post")
+    @ResponseKeyPath("headers.Host")
+    func postJSONKeyPath() async throws -> String
 
     /// Test POST request with fields (auto-inferred)
     @POST("/post")
@@ -176,7 +180,7 @@ struct HTTPBinAPI {
 
     @PUT("/anything")
     @Multipart
-    func upload(title: String, text: String) async throws -> String
+    func upload(title: String, text: String) async throws -> (form: (text: String, title: String), method: String)
 }
 
 // MARK: - Test Cases
@@ -394,6 +398,12 @@ final class HTTPBinTests: XCTestCase {
 
     func testMultipartUpload() async throws {
         let resp = try await api.upload(title: "hello", text: "world")
-        print(resp)
+        XCTAssertEqual(resp.form.title, "hello")
+        XCTAssertEqual(resp.form.text, "world")
+    }
+
+    func testResponseKeyPath() async throws {
+        let resp = try await api.postJSONKeyPath()
+        XCTAssertEqual(resp, "httpbin.org")
     }
 }

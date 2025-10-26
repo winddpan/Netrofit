@@ -1,8 +1,8 @@
 # Netrofit
 
-Swift 版本 Retrofit，参考 Retrofit API，结合 Swift 的自动推断能力，
-对可以自动识别的场景**不要求额外注解**，同时增强了 Swift 专属特性（tuple 返回、嵌套 tuple）。
-
+Swift 版本 Retrofit，参考 Retrofit API 设计，结合 Swift 的类型推断能力，
+自动识别的场景**无需额外注解**，并增强 Swift 专属特性（tuple 返回、嵌套 tuple）。
+支持SSE。
 
 ```swift
 @API
@@ -19,6 +19,11 @@ struct UsersAPI {
     @GET("/users/{username}/todos")
     func getTodos(username: String) async throws -> [Todo]
     // GET /users/johne/todos
+
+    @POST("/chat/completions")
+    @EventStreaming
+    @Headers(["Authorization": "Bearer ..."])
+    func completions(model: String, messages: [Message], stream: Bool = true) async throws -> AsyncStream<String>
 }
 
 let provider = Provider(baseURL: "https://www.example.com")
@@ -66,8 +71,8 @@ func checkResource(id: Int) async throws -> HTTPHeaders
 
 ### 2. URL 路径参数
 
-- 自动推断：方法参数名与 URL 中 `{placeholder}` 对应时，不需要额外标注。
-- 如果参数名不同，则使用 `@Path` 指定。
+- 参数名与 URL 中 `{placeholder}` 相同时，自动映射，无需标注
+- 参数名不同时，使用 `@Path` 显式指定
 
 ```swift
 @GET("/group/{id}/users")
@@ -95,9 +100,9 @@ func groupList(@Path("gid", encoded: true) groupId: Int) async throws -> [User]
 
 ### 3. Query 参数
 
-- 自动推断：简单类型方法参数 → 自动映射为 query 参数（除非已匹配 @Path）。
-- Map / Dictionary 自动展开为 `&key=value`。
-- 支持显式 `@Query` 可用于覆盖自动推断的参数名、或者POST等非标准RESTful API请求。
+- 简单类型参数自动映射为 query 参数（已匹配 @Path 的除外）
+- Dictionary 自动展开为 `&key=value`
+- 使用 `@Query` 可覆盖参数名或用于 POST 等非 GET 请求
 
 ```swift
 @GET("/transactions")
@@ -137,9 +142,8 @@ func searchUsers(@Query("q", encoded: true) keyword: String) async throws -> [Us
 
 ### 4. Request Body
 
-- POST/PUT/PATCH 中只有一个参数为"_"会自动作为 
-Body
-- 支持显式 `@Body` 覆盖GET等非标准RESTful API请求。
+- POST/PUT/PATCH 中，未命名参数（参数标签为 `_`）自动作为 Body
+- 使用 `@Body` 可显式指定或用于 GET 等非标准请求
 
 ```swift
 @POST("/users/new")
@@ -159,9 +163,8 @@ func addItem(@Body item: Item, @Query("notify") notify: Bool) async throws -> It
 
 ### 5. Field
 
-- POST/PUT/PATCH 中除仅用于 @Query/@Path/@Header/@Body 的基础类型，其他对象参数会自动作为 
-Body Field
-- 支持显式 `@Body` 覆盖GET等非标准RESTful API请求。
+- POST/PUT/PATCH 中，除已用于 `@Query`/`@Path`/`@Header`/`@Body` 的参数外，对象参数自动作为 Body Field
+- 使用 `@Field` 可显式指定字段名或用于 GET 等非标准请求
 
 ```swift
 @POST("/users/new")
@@ -186,8 +189,9 @@ func createUser(@Field("new_name") name: String, id: String) async throws -> Use
 ---
 
 ### 6. JSON
-- JSON 为默认 body 编码。
-- 适用于 `application/json`。
+
+- JSON 为默认 body 编码，适用于 `application/json`
+- 支持自定义 encoder 和 decoder
 
 ```swift
 @POST("/users/new")
@@ -202,15 +206,15 @@ func createUser(id: String, name: String) async throws -> User
 // 支持自定义 encoder 和 decoder
 @JSON(encoder: JSONEncoder(), decoder: DynamicContentTypeDecoder())
 @POST("/data")
-func createUser(user: User) async throws -> User
-// POST /users/new (json body: {"user": User})
+func createData(user: User) async throws -> User
+// POST /data (json body: {"user": User})
 ```
 
 ---
 
 ### 7. Form-encoded
 
-适用于 `application/x-www-form-urlencoded`。
+适用于 `application/x-www-form-urlencoded`，支持自定义 encoder 和 decoder。
 
 ```swift
 @FormUrlEncoded
@@ -234,7 +238,7 @@ func submitForm(data: FormData) async throws
 
 ### 8. Multipart
 
-适用于文件上传或富媒体内容。
+适用于文件上传或富媒体内容，支持自定义 encoder 和 decoder。
 
 ```swift
 @Multipart
@@ -243,8 +247,8 @@ func updateUser(
     @Part(name: "photo", filename: "avatar.jpg", mimeType: "image/jpeg") photo: Data,
     @Part(name: "desc") description: String
 ) async throws -> User
-// PUT /user/photo (multipart: photo,description)
-// @Part 支持自定义 name、filename、mimeType。
+// PUT /user/photo (multipart: photo, description)
+// @Part 支持自定义 name、filename、mimeType
 
 // 支持自定义 encoder 和 decoder
 @Multipart(encoder: MultipartEncoder(), decoder: JSONDecoder())
@@ -281,9 +285,9 @@ func getUser(@HeaderMap headers: [String: String]) async throws -> User
 
 ---
 
-### 10.  返回值解析 KeyPath
+### 10. 返回值解析 KeyPath
 
-`@ResponseKeyPath` 可以解析JSON中的KeyPath，支持多级嵌套。
+使用 `@ResponseKeyPath` 可解析 JSON 中的 KeyPath，支持多级嵌套。
 
 ```swift
 @GET("/users")
@@ -294,10 +298,9 @@ func listUsers() async throws -> [User]
 
 ---
 
-### 11. 返回值支持 tuple（包括多级嵌套 tuple）
+### 11. 返回值支持 tuple（包括多级嵌套）
 
- 支持返回值为 tuple，且 tuple 可以嵌套。  
-每个 tuple 元素会按顺序映射对应的响应数据部分（例如通过多分部解析器或批量请求返回）。
+支持返回值为 tuple，tuple 可嵌套。tuple 元素按顺序映射响应数据部分。
 
 ```swift
 @GET("/user")
@@ -313,8 +316,8 @@ func getUserList() async throws -> (list: [(id: String, name: String)], count: I
 
 ### 12. EventStreaming（AsyncStream）
 
-- `@EventStreaming` 标注让客户端保持长连接，适用于 Server-Sent Events 持续推送的场景。
-- 方法返回 `AsyncStream`（或 `AsyncThrowingStream`）来逐条消费服务端事件，配合 `for await` 监听即可。
+- `@EventStreaming` 用于 Server-Sent Events 持续推送的场景
+- 返回 `AsyncStream` 或 `AsyncThrowingStream`，配合 `for await` 逐条消费事件
 
 ```swift
 @EventStreaming
@@ -336,34 +339,33 @@ for await event in try await api.listenEvents(roomID: "chat") {
 
 ### 13. 自动推断规则
 
-1. **Path 参数自动匹配规则**  
-   - URL 路径中的 `{placeholder}` 会自动匹配同名参数。
-   - 仅在不匹配时需要显式 `@Path`。
+1. **Path 参数自动匹配**
+   - URL 路径中的 `{placeholder}` 自动匹配同名参数
+   - 仅在不匹配时需显式使用 `@Path`
 
-2. **Query 参数自动推断规则**  
-   - 除 Path 参数外，非对象类型（String, Int, Bool 等）会自动映射为 query 参数。
-   - `Dictionary` 会被展开为多个 query 项。
+2. **Query 参数自动推断**
+   - 除 Path 参数外，简单类型（String、Int、Bool 等）自动映射为 query 参数
+   - Dictionary 自动展开为多个 query 项
 
-3. **Field 参数自动推断规则**  
-   - 在 `@FormUrlEncoded` 方法中，基础类型参数会自动映射为表单字段。
-   - 参数名直接作为表单字段名，除非使用 `@Field` 指定别名。
-   - POST/PUT/PATCH 中除仅用于 @Query/@Path/@Header/@Body 的基础类型，其他对象参数会自动作为 Body Field
-   - 对象类型参数会被序列化为表单字段（使用默认或自定义编码器）。
+3. **Field 参数自动推断**
+   - `@FormUrlEncoded` 方法中，基础类型参数自动映射为表单字段
+   - 参数名作为字段名，除非使用 `@Field` 指定别名
+   - POST/PUT/PATCH 中，除已用于 `@Query`/`@Path`/`@Header`/`@Body` 的参数外，对象参数自动作为 Body Field
 
-4. **Body 参数自动推断规则**  
-   - POST/PUT/PATCH 中只有一个参数为"_"会自动作为 
-Body
+4. **Body 参数自动推断**
+   - POST/PUT/PATCH 中，未命名参数（参数标签为 `_`）自动作为 Body
 
-1. **默认编码规则**  
-   - JSON `application/json` 为默认 body 编码。
-   - URL Encoding 为默认 query 参数编码。
+5. **默认编码规则**
+   - JSON（`application/json`）为默认 body 编码
+   - URL Encoding 为默认 query 参数编码
 
 
 ---
 
 ### 14. 额外支持
-- **TODO: Async & Combine**：既支持 `async/await`，也可返回 `Publisher`。
-- **Global Interceptors**：可注册 header、logging、auth 拦截器。
+
+- **TODO: Async & Combine**：支持 `async/await` 和 `Publisher`
+- **Global Interceptors**：支持注册 header、logging、auth 拦截器
 
 ---
 

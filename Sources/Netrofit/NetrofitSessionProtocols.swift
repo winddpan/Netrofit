@@ -8,23 +8,23 @@
 import Foundation
 
 public protocol NetrofitSession {
-    func createTask(method: String, url: URL, headers: [String: String]?, body: Data?) -> NetrofitTask
+    func createTask(
+        method: String,
+        url: URL,
+        headers: [String: String]?,
+        body: Data?,
+        plugins: [NetrofitPlugin]
+    ) -> NetrofitTask
 }
 
 public protocol NetrofitTask {
     func resume()
+
     func waitUntilFinished() async -> NetrofitResponse
-    func connectStream<T: Decodable>(_ type: T.Type, using decoder: HTTPBodyDecoder) throws -> AsyncStream<T>
-    func connectThrowingStream<T: Decodable>(_ type: T.Type, using decoder: HTTPBodyDecoder) throws -> AsyncThrowingStream<T, Error>
-}
 
-public protocol NetrofitResponse {
-    var request: URLRequest { get }
-    var body: Data? { get }
-    var headers: [String: String]? { get }
-    var statusCode: Int? { get }
-    var error: Error? { get }
+    func decode<T: Decodable>(_ type: T.Type, response: NetrofitResponse, using builder: RequestBuilder) throws -> T
 
-    func validate() throws
-    func decode<T: Decodable>(_ type: T.Type, using decoder: HTTPBodyDecoder) throws -> T
+    func connectStream<T: Decodable>(_ type: T.Type, using builder: RequestBuilder) throws -> AsyncStream<T>
+
+    func connectThrowingStream<T: Decodable>(_ type: T.Type, using builder: RequestBuilder) throws -> AsyncThrowingStream<T, Error>
 }

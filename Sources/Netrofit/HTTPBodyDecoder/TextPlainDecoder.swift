@@ -5,7 +5,7 @@ public enum TextPlainDecoderError: Error {
 }
 
 open class TextPlainDecoder: HTTPBodyDecoder {
-    open func decodeBody<D>(_ type: D.Type, from data: Data, contentType: String?) throws -> D where D: Decodable {
+    open func decodeBody<D>(_ type: D.Type, from data: Data, contentType: String?, deocdeKeyPath: String?) throws -> D where D: Decodable {
         if type == String.self {
             return String(data: data, encoding: .utf8) as! D
         }

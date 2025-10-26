@@ -5,29 +5,22 @@ public enum DynamicContentTypeError: Error {
 }
 
 open class DynamicContentTypeDecoder: HTTPBodyDecoder {
-    open func decodeBody<D>(_ type: D.Type, from data: Data, contentType: String?) throws -> D where D: Decodable {
+    open func decodeBody<D>(_ type: D.Type, from data: Data, contentType: String?, deocdeKeyPath: String?) throws -> D where D: Decodable {
         let mainType = contentType?
             .split(separator: ";", maxSplits: 1, omittingEmptySubsequences: true)
             .first?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
 
-        do {
-            switch mainType {
-            case "text/plain":
-                return try TextPlainDecoder().decodeBody(type, from: data, contentType: contentType)
-            case "application/json":
-                return try JSONDecoder().decodeBody(type, from: data, contentType: contentType)
-            case "text/event-stream":
-                return try EventStreamingDecoder().decodeBody(type, from: data, contentType: contentType)
-            default:
-                throw DynamicContentTypeError.undetectContentType(contentType)
-            }
-        } catch {
-            if type.self == String.self {
-                return String(data: data, encoding: .utf8) as! D
-            }
-            throw error
+        switch mainType {
+        case "text/plain":
+            return try TextPlainDecoder().decodeBody(type, from: data, contentType: contentType, deocdeKeyPath: deocdeKeyPath)
+        case "application/json":
+            return try JSONDecoder().decodeBody(type, from: data, contentType: contentType, deocdeKeyPath: deocdeKeyPath)
+        case "text/event-stream":
+            return try EventStreamingDecoder().decodeBody(type, from: data, contentType: contentType, deocdeKeyPath: deocdeKeyPath)
+        default:
+            throw DynamicContentTypeError.undetectContentType(contentType)
         }
     }
 

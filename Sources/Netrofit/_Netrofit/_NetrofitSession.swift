@@ -4,14 +4,14 @@ extension NetrofitProvider {
     public convenience init(
         baseURL: String,
         configuration: URLSessionConfiguration = .default,
-        interceptors: [NetrofitInterceptor] = []
+        plugins: [NetrofitPlugin] = []
     ) {
         let session = _NetrofitSession(configuration: configuration)
-        self.init(baseURL: baseURL, session: session, interceptors: interceptors)
+        self.init(baseURL: baseURL, session: session, plugins: plugins)
     }
 }
 
-class _NetrofitSession: NSObject, NetrofitSession, URLSessionDataDelegate {
+final class _NetrofitSession: NSObject, NetrofitSession, URLSessionDataDelegate {
     let configuration: URLSessionConfiguration
     private var urlSession: URLSession!
     private var createdTasks = Set<_NetrofitTask>()
@@ -19,16 +19,16 @@ class _NetrofitSession: NSObject, NetrofitSession, URLSessionDataDelegate {
     init(configuration: URLSessionConfiguration) {
         self.configuration = configuration
         super.init()
-        urlSession = URLSession(configuration: configuration, delegate: self, delegateQueue: .main)
+        urlSession = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     }
 
-    func createTask(method: String, url: URL, headers: [String: String]?, body: Data?) -> NetrofitTask {
+    func createTask(method: String, url: URL, headers: [String: String]?, body: Data?, plugins: [NetrofitPlugin]) -> NetrofitTask {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.httpBody = body
         request.allHTTPHeaderFields = headers
 
-        let task = _NetrofitTask(urlSession: urlSession, request: request)
+        let task = _NetrofitTask(urlSession: urlSession, request: request, plugins: plugins)
         createdTasks.insert(task)
         return task
     }
@@ -49,6 +49,7 @@ class _NetrofitSession: NSObject, NetrofitSession, URLSessionDataDelegate {
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
         if let _task = createdTasks.first(where: { $0.dataTask === task }) {
             _task.didCompleteWithError(error)
+            createdTasks.remove(_task)
         }
     }
 }
