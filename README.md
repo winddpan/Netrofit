@@ -1,8 +1,8 @@
 # Netrofit
 
-Swift 版本 Retrofit，参考 Retrofit API 设计，结合 Swift 的类型推断能力，
-自动识别的场景**无需额外注解**，并增强 Swift 专属特性（tuple 返回、嵌套 tuple）。
-支持SSE。
+A Swift version of Retrofit, inspired by Retrofit's API design and enhanced with Swift's type inference capabilities.
+Automatically recognizes scenarios **without extra annotations**, and adds Swift-specific features (tuple returns, nested tuples).
+Supports SSE (Server-Sent Events).
 
 ```swift
 @API
@@ -34,9 +34,9 @@ let resp = try await UsersAPI(provider).getUser(id: "johne")
 
 ---
 
-### 1. 基本请求方法
+### 1. Basic Request Methods
 
-支持的 HTTP 方法：
+Supported HTTP methods:
 
 ```swift
 @GET("/users/list")
@@ -70,10 +70,10 @@ func checkResource(id: Int) async throws -> HTTPHeaders
 
 ---
 
-### 2. URL 路径参数
+### 2. URL Path Parameters
 
-- 参数名与 URL 中 `{placeholder}` 相同时，自动映射，无需标注
-- 参数名不同时，使用 `@Path` 显式指定
+- Parameters with the same name as `{placeholder}` in the URL are automatically mapped without annotation
+- Use `@Path` to explicitly specify when parameter names differ
 
 ```swift
 @GET("/group/{id}/users")
@@ -99,11 +99,11 @@ func groupList(@Path("gid", encoded: true) groupId: Int) async throws -> [User]
 
 ---
 
-### 3. Query 参数
+### 3. Query Parameters
 
-- 简单类型参数自动映射为 query 参数（已匹配 @Path 的除外）
-- Dictionary 自动展开为 `&key=value`
-- 使用 `@Query` 可覆盖参数名或用于 POST 等非 GET 请求
+- Simple type parameters are automatically mapped to query parameters (except those matched with @Path)
+- Dictionary is automatically expanded to `&key=value`
+- Use `@Query` to override parameter names or for non-GET requests like POST
 
 ```swift
 @GET("/transactions")
@@ -143,8 +143,8 @@ func searchUsers(@Query("q", encoded: true) keyword: String) async throws -> [Us
 
 ### 4. Request Body
 
-- POST/PUT/PATCH 中，未命名参数（参数标签为 `_`）自动作为 Body
-- 使用 `@Body` 可显式指定或用于 GET 等非标准请求
+- In POST/PUT/PATCH, unnamed parameters (parameter label is `_`) are automatically used as Body
+- Use `@Body` to explicitly specify or for non-standard requests like GET
 
 ```swift
 @POST("/users/new")
@@ -164,8 +164,8 @@ func addItem(@Body item: Item, @Query("notify") notify: Bool) async throws -> It
 
 ### 5. Field
 
-- POST/PUT/PATCH 中，除已用于 `@Query`/`@Path`/`@Header`/`@Body` 的参数外，对象参数自动作为 Body Field
-- 使用 `@Field` 可显式指定字段名或用于 GET 等非标准请求
+- In POST/PUT/PATCH, object parameters not used for `@Query`/`@Path`/`@Header`/`@Body` are automatically used as Body Fields
+- Use `@Field` to explicitly specify field names or for non-standard requests like GET
 
 ```swift
 @POST("/users/new")
@@ -191,8 +191,8 @@ func createUser(@Field("new_name") name: String, id: String) async throws -> Use
 
 ### 6. JSON
 
-- JSON 为默认 body 编码，适用于 `application/json`
-- 支持自定义 encoder 和 decoder
+- JSON is the default body encoding for `application/json`
+- Supports custom encoder and decoder
 
 ```swift
 @POST("/users/new")
@@ -204,7 +204,7 @@ func createUser(_ user: User) async throws -> User
 func createUser(id: String, name: String) async throws -> User
 // POST /users/new (json body: {"id": String, "name": String})
 
-// 支持自定义 encoder 和 decoder
+// Supports custom encoder and decoder
 @JSON(encoder: JSONEncoder(), decoder: DynamicContentTypeDecoder())
 @POST("/data")
 func createData(user: User) async throws -> User
@@ -215,7 +215,7 @@ func createData(user: User) async throws -> User
 
 ### 7. Form-encoded
 
-适用于 `application/x-www-form-urlencoded`，支持自定义 encoder 和 decoder。
+For `application/x-www-form-urlencoded`, supports custom encoder and decoder.
 
 ```swift
 @FormUrlEncoded
@@ -228,7 +228,7 @@ func updateUser(firstName: String, lastName: String) async throws -> User
 func updateUser(@Field("first") firstName: String, @Field("last") lastName: String) async throws -> User
 // POST /user/edit (form body: first=...&last=...)
 
-// 支持自定义 encoder 和 decoder
+// Supports custom encoder and decoder
 @FormUrlEncoded(encoder: URLEncodedFormEncoder(), decoder: JSONDecoder())
 @POST("/form")
 func submitForm(data: FormData) async throws
@@ -239,7 +239,7 @@ func submitForm(data: FormData) async throws
 
 ### 8. Multipart
 
-适用于文件上传或富媒体内容，支持自定义 encoder 和 decoder。
+For file uploads or rich media content, supports custom encoder and decoder.
 
 ```swift
 @Multipart
@@ -249,9 +249,9 @@ func updateUser(
     @Part(name: "desc") description: String
 ) async throws -> User
 // PUT /user/photo (multipart: photo, description)
-// @Part 支持自定义 name、filename、mimeType
+// @Part supports custom name, filename, mimeType
 
-// 支持自定义 encoder 和 decoder
+// Supports custom encoder and decoder
 @Multipart(encoder: MultipartEncoder(), decoder: JSONDecoder())
 @POST("/upload")
 func uploadFile(file: URL, meta: [String: String]) async throws -> UploadResponse
@@ -260,9 +260,9 @@ func uploadFile(file: URL, meta: [String: String]) async throws -> UploadRespons
 
 ---
 
-### 9. Header 操作
+### 9. Header Operations
 
-#### 静态 Header
+#### Static Headers
 ```swift
 @Headers([
     "Cache-Control": "max-age=640000",
@@ -273,7 +273,7 @@ func getUser(username: String) async throws -> User
 // GET /users/johne
 ```
 
-#### 动态 Header
+#### Dynamic Headers
 ```swift
 @GET("/user")
 func getUser(@Header("Authorization") token: String) async throws -> User
@@ -286,9 +286,9 @@ func getUser(@HeaderMap headers: [String: String]) async throws -> User
 
 ---
 
-### 10. 返回值解析 KeyPath
+### 10. Response KeyPath Parsing
 
-使用 `@ResponseKeyPath` 可解析 JSON 中的 KeyPath，支持多级嵌套。
+Use `@ResponseKeyPath` to parse a KeyPath in JSON, supports multi-level nesting.
 
 ```swift
 @GET("/users")
@@ -299,9 +299,9 @@ func listUsers() async throws -> [User]
 
 ---
 
-### 11. 返回值支持 tuple（包括多级嵌套）
+### 11. Tuple Return Values (Including Multi-level Nesting)
 
-支持返回值为 tuple，tuple 可嵌套。tuple 元素按顺序映射响应数据部分。
+Supports tuple return values with nested tuples. Tuple elements map response data in order.
 
 ```swift
 @GET("/user")
@@ -315,58 +315,58 @@ func getUserList() async throws -> (list: [(id: String, name: String)], count: I
 
 ---
 
-### 12. EventStreaming（AsyncStream）
+### 12. EventStreaming (AsyncStream)
 
-- `@EventStreaming` 用于 Server-Sent Events 持续推送的场景
-- 返回 `AsyncStream` 或 `AsyncThrowingStream`，配合 `for await` 逐条消费事件
+- `@EventStreaming` is for Server-Sent Events continuous streaming scenarios
+- Returns `AsyncStream` or `AsyncThrowingStream`, consume events with `for await`
 
 ```swift
 @EventStreaming
 @GET("/events/stream")
 func listenEvents(roomID: String) async throws -> AsyncStream<String>
-// GET /events/stream?roomID=... 持续推送 Event
+// GET /events/stream?roomID=... continuous event streaming
 
 @EventStreaming
 @GET("/events/stream")
 func listenEventsThrowing(roomID: String) async throws -> AsyncThrowingStream<String, Error>
-// GET /events/stream?roomID=... 持续推送 Event
+// GET /events/stream?roomID=... continuous event streaming
 
 for await event in try await api.listenEvents(roomID: "chat") {
-    print("收到事件:", event)
+    print("Received event:", event)
 }
 ```
 
 ---
 
-### 13. 自动推断规则
+### 13. Auto-Inference Rules
 
-1. **Path 参数自动匹配**
-   - URL 路径中的 `{placeholder}` 自动匹配同名参数
-   - 仅在不匹配时需显式使用 `@Path`
+1. **Automatic Path Parameter Matching**
+   - `{placeholder}` in URL paths automatically matches parameters with the same name
+   - Only need explicit `@Path` when names don't match
 
-2. **Query 参数自动推断**
-   - 除 Path 参数外，简单类型（String、Int、Bool 等）自动映射为 query 参数
-   - Dictionary 自动展开为多个 query 项
+2. **Automatic Query Parameter Inference**
+   - Except for Path parameters, simple types (String, Int, Bool, etc.) are automatically mapped to query parameters
+   - Dictionary is automatically expanded to multiple query items
 
-3. **Field 参数自动推断**
-   - `@FormUrlEncoded` 方法中，基础类型参数自动映射为表单字段
-   - 参数名作为字段名，除非使用 `@Field` 指定别名
-   - POST/PUT/PATCH 中，除已用于 `@Query`/`@Path`/`@Header`/`@Body` 的参数外，对象参数自动作为 Body Field
+3. **Automatic Field Parameter Inference**
+   - In `@FormUrlEncoded` methods, basic type parameters are automatically mapped to form fields
+   - Parameter name is used as field name unless `@Field` specifies an alias
+   - In POST/PUT/PATCH, object parameters not used for `@Query`/`@Path`/`@Header`/`@Body` are automatically used as Body Fields
 
-4. **Body 参数自动推断**
-   - POST/PUT/PATCH 中，未命名参数（参数标签为 `_`）自动作为 Body
+4. **Automatic Body Parameter Inference**
+   - In POST/PUT/PATCH, unnamed parameters (parameter label is `_`) are automatically used as Body
 
-5. **默认编码规则**
-   - JSON（`application/json`）为默认 body 编码
-   - URL Encoding 为默认 query 参数编码
+5. **Default Encoding Rules**
+   - JSON (`application/json`) is the default body encoding
+   - URL Encoding is the default query parameter encoding
 
 
 ---
 
-### 14. 额外支持
+### 14. Additional Support
 
-- **TODO: Async & Combine**：支持 `async/await` 和 `Publisher`
-- **Global Interceptors**：支持注册 header、logging、auth 拦截器
+- **TODO: Async & Combine**: Supports `async/await` and `Publisher`
+- **Global Interceptors**: Supports registering header, logging, and auth interceptors
 
 ---
 
