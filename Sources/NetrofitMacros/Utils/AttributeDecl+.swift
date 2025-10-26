@@ -25,16 +25,16 @@ extension AttributeListSyntax {
         var decoder: String?
         if let attribute = findAttribute(named: "FormUrlEncoded") {
             encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "URLEncodedFormEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "URLEncodedFormDecoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
         } else if let attribute = findAttribute(named: "Multipart") {
             encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "MultipartEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "MultipartDecoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
         } else if let attribute = findAttribute(named: "JSON") {
             encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "JSONEncoder()"
             decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
-        } else if let attribute = findAttribute(named: "Streaming") {
-            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "StreamingEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "StreamingDecoder()"
+        } else if let attribute = findAttribute(named: "EventStreaming") {
+            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "EventStreamingEncoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "TextPlainDecoder()"
         }
         return (encoder, decoder)
     }

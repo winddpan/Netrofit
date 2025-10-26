@@ -131,14 +131,14 @@ struct FormUrlEncodedTest {
 
     @FormUrlEncoded
     @POST("/user/edit")
-    func updateUser2(@Field("first") firstName: String, @Field("last") lastName: String) async throws -> User
+    func updateUser2(@Field("first") firstName: String, @Field("last") lastName: String?) async throws -> User
     // POST /user/edit (form body: first=...&last=...)
 
     class MyURLEncodedFormEncoder: URLEncodedFormEncoder {}
-    class MyURLEncodedFormDecoder: URLEncodedFormDecoder {}
+    class MyJSONDecoder: JSONDecoder {}
 
     // 支持自定义 encoder 和 decoder
-    @FormUrlEncoded(encoder: MyURLEncodedFormEncoder(), decoder: MyURLEncodedFormDecoder())
+    @FormUrlEncoded(encoder: MyURLEncodedFormEncoder(), decoder: MyJSONDecoder())
     @POST("/form")
     func submitForm3(data: User) async throws
     // POST /form (form body: ...=...&....=...&...=...)
@@ -165,7 +165,7 @@ struct MultipartTest {
     // @Part 支持自定义 name、filename、mimeType。
 
     // 支持自定义 encoder 和 decoder
-    @Multipart(encoder: MultipartEncoder(), decoder: MultipartDecoder())
+    @Multipart(encoder: MultipartEncoder(), decoder: JSONDecoder())
     @POST("/upload")
     func uploadFile(file: Data, meta: [String: String]) async throws
     // POST /upload (multipart: file,meta)
@@ -293,20 +293,20 @@ struct TupleResultComplexTest {
 
 @API
 struct AsyncStreamTest {
-    @Streaming
+    @EventStreaming
     @GET("/events/stream")
     func listenEvents(roomID: String) async throws -> AsyncStream<String>
     // GET /events/stream?roomID=... 持续推送 Event
 
-    @Streaming
+    @EventStreaming
     @GET("/events/stream")
     func listenEventsThrowing(roomID: String) async throws -> AsyncThrowingStream<String, Error>
     // GET /events/stream?roomID=... 持续推送 Event
 
-    class MyStreamingEncoder: StreamingEncoder {}
-    class MyStreamingDecoder: StreamingDecoder {}
+    class MyEventStreamingEncoder: EventStreamingEncoder {}
+    class MyEventStreamingDecoder: TextPlainDecoder {}
 
-    @Streaming(encoder: MyStreamingEncoder(), decoder: MyStreamingDecoder())
+    @EventStreaming(encoder: MyEventStreamingEncoder(), decoder: MyEventStreamingDecoder())
     @GET("/events/stream")
     func listenEventsThrowing2(roomID: String) async throws -> AsyncThrowingStream<String, Error>
     // GET /events/stream?roomID=... 持续推送 Event

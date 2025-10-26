@@ -9,7 +9,7 @@ open class MultipartEncoder: HTTPBodyEncoder {
         self.boundary = boundary ?? .randomMultipartBoundary()
     }
 
-    open func encode<E>(_ value: E) throws -> Data where E: Encodable {
+    open func encodeBody<E>(_ value: E) throws -> Data? where E: Encodable {
         fatalError()
     }
 
@@ -64,17 +64,6 @@ open class MultipartEncoder: HTTPBodyEncoder {
 //    }
 }
 
-open class MultipartDecoder: HTTPBodyDecoder {
-    public let boundary: String
-
-    public init(boundary: String? = nil) {
-        self.boundary = boundary ?? .randomMultipartBoundary()
-    }
-
-    public func decode<D>(_ type: D.Type, from: Data) throws -> D where D: Decodable {
-        fatalError("multipart decoding isn't supported, yet")
-    }
-}
 
 private extension String {
     static func randomMultipartBoundary() -> String {

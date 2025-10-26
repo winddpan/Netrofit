@@ -25,7 +25,7 @@ public macro JSON(
 @attached(peer)
 public macro FormUrlEncoded(
     encoder: HTTPBodyEncoder = URLEncodedFormEncoder(),
-    decoder: HTTPBodyDecoder = URLEncodedFormDecoder()
+    decoder: HTTPBodyDecoder = JSONDecoder()
 ) = #externalMacro(
     module: "NetrofitMacros",
     type: "EmptyMacro"
@@ -34,13 +34,13 @@ public macro FormUrlEncoded(
 @attached(peer)
 public macro Multipart(
     encoder: HTTPBodyEncoder = MultipartEncoder(),
-    decoder: HTTPBodyDecoder = MultipartDecoder()
+    decoder: HTTPBodyDecoder = JSONDecoder()
 ) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 @attached(peer)
-public macro Streaming(
-    encoder: HTTPBodyEncoder = StreamingEncoder(),
-    decoder: HTTPBodyDecoder = StreamingDecoder()
+public macro EventStreaming(
+    encoder: HTTPBodyEncoder = EventStreamingEncoder(),
+    decoder: HTTPBodyDecoder = TextPlainDecoder()
 ) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 // MARK: Method

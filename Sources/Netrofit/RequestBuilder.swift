@@ -1,21 +1,36 @@
 import Foundation
 
+public enum NetrofitRequestError: Error {
+    case badURL(String)
+}
+
+public enum PayloadFormat: String {
+    case JSON
+    case FormUrlEncoded
+    case Multipart
+    case EventStreaming
+}
+
 public struct RequestBuilder {
     public var path: String
     public var method: String
     public var encoder: HTTPBodyEncoder
     public var decoder: HTTPBodyDecoder
-    public var headers: [String: String]?
-    public var queries: [String: String]?
-    public var responseKeyPath: String?
-    public var payloadFormat: String = "JSON"
+    public var headers: [String: String] = [:]
+    public var queries: [String: String] = [:]
+    public var body: Encodable?
+    public var fields: [String: Encodable] = [:]
+    public var parts: [(name: String, value: Encodable, filename: String?, mimeType: String?)] = []
 
-    public init(path: String, method: String, encoder: HTTPBodyEncoder, decoder: HTTPBodyDecoder, headers: [String: String]? = nil) {
+    public var responseKeyPath: String?
+    public var payloadFormat: PayloadFormat = .JSON
+
+    public init(path: String, method: String, encoder: HTTPBodyEncoder, decoder: HTTPBodyDecoder, headers: [String: String]?) {
         self.path = path
         self.method = method
         self.encoder = encoder
         self.decoder = decoder
-        self.headers = headers
+        self.headers = headers ?? [:]
     }
 
     public mutating func setResponseKeyPath(_ path: String) {
@@ -23,21 +38,18 @@ public struct RequestBuilder {
     }
 
     public mutating func addHeaders(_ newHeaders: [String: String]?) {
-        if let headers {
-            self.headers = headers.merging(newHeaders ?? [:], uniquingKeysWith: { _, new in new })
-        } else {
-            headers = newHeaders
-        }
+        headers = headers.merging(newHeaders ?? [:], uniquingKeysWith: { _, new in new })
     }
 
     public mutating func addHeader(_ key: String, value: String?) {
         guard let value else { return }
-        var headers = self.headers ?? [:]
+        var headers = self.headers
         headers[key] = value
         self.headers = headers
     }
 
     public mutating func addQuery<T: CustomStringConvertible>(_ key: String, value: T?, encoded: Bool) {
+        guard let value else { return }
         if let map = value as? [String: String] {
             for (key, value) in map {
                 addQuery(key, value: value, encoded: encoded)
@@ -45,27 +57,93 @@ public struct RequestBuilder {
             return
         }
 
-        guard let value else { return }
         var stringValue = "\(value)"
         if !encoded {
             stringValue = stringValue.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? stringValue
         }
-        if let queries {
-            self.queries = queries.merging([key: stringValue], uniquingKeysWith: { _, new in new })
-        } else {
-            queries = [key: stringValue]
-        }
+        queries = queries.merging([key: stringValue], uniquingKeysWith: { _, new in new })
     }
 
-    public mutating func setBody<T: Encodable>(_ body: T?) {}
+    public mutating func setBody<E: Encodable>(_ body: E?) {
+        guard let body else { return }
+        self.body = body
+    }
 
-    public mutating func addField<E: Encodable>(_ key: String, value: E) {}
+    public mutating func addField<E: Encodable>(_ key: String, value: E?) {
+        guard let value else { return }
+        fields[key] = value
+    }
 
-    public mutating func addPart<E: Encodable>(_ name: String, value: E, filename: String?, mimeType: String?) {}
+    public mutating func addPart<E: Encodable>(_ name: String, value: E?, filename: String?, mimeType: String?) {
+        guard let value else { return }
+        parts.append((name, value, filename, mimeType))
+    }
 }
 
 extension RequestBuilder {
+    public func getFullURL(baseURL: String) throws -> URL {
+        var baseURL = baseURL
+        var path = path
+        if baseURL.hasSuffix("/") {
+            baseURL = String(baseURL.dropLast())
+        }
+        if path.hasPrefix("/") {
+            path = String(baseURL.dropFirst())
+        }
+        let urlStr = "\(baseURL)/\(path)"
+
+        var queryItems = [URLQueryItem]()
+        for query in queries {
+            queryItems.append(URLQueryItem(name: query.key, value: query.value))
+        }
+
+        var urlCompoments = URLComponents(string: urlStr)
+        urlCompoments?.queryItems = queryItems
+        if let url = urlCompoments?.url {
+            return url
+        }
+        throw NetrofitRequestError.badURL(urlStr)
+    }
+
     public func bodyData() throws -> Data? {
+        switch payloadFormat {
+        case .JSON:
+            try JSONPayloadData()
+        case .FormUrlEncoded:
+            try formUrlEncodedPayloadData()
+        case .Multipart:
+            try multipartPayloadData()
+        case .EventStreaming:
+            try streamingPayloadData()
+        }
+    }
+
+    private func JSONPayloadData() throws -> Data? {
+        if let body {
+            return try encoder.encodeBody(body)
+        } else if !fields.isEmpty {
+            var mappedFields = [String: _AnyEncodable]()
+            for (key, value) in fields {
+                mappedFields[key] = _AnyEncodable(value)
+            }
+            return try encoder.encodeBody(mappedFields)
+        }
+        return nil
+    }
+
+    private func formUrlEncodedPayloadData() throws -> Data? {
+        var mappedFields = [String: String]()
+        for (key, value) in fields {
+            mappedFields[key] = "\(value)"
+        }
+        return try encoder.encodeBody(mappedFields)
+    }
+
+    private func multipartPayloadData() throws -> Data? {
+        nil
+    }
+
+    private func streamingPayloadData() throws -> Data? {
         nil
     }
 }

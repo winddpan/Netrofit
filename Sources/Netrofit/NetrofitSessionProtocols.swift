@@ -7,7 +7,6 @@
 
 import Foundation
 
-/// A type that can perform arbitrary HTTP requests.
 public protocol NetrofitSession {
     func createTask(method: String, url: URL, headers: [String: String]?, body: Data?) -> NetrofitTask
 }

@@ -76,7 +76,7 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
         codes.append(
             """
             var builder = builder(path: \(raw: flattedPath), method: "\(raw: method)")
-            builder.payloadFormat = \(raw: runtimePayloadFormat.rawValue.addingQuotes())
+            builder.payloadFormat = .\(raw: runtimePayloadFormat.rawValue)
             """
         )
 

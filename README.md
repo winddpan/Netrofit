@@ -224,7 +224,7 @@ func updateUser(@Field("first") firstName: String, @Field("last") lastName: Stri
 // POST /user/edit (form body: first=...&last=...)
 
 // 支持自定义 encoder 和 decoder
-@FormUrlEncoded(encoder: URLEncodedFormEncoder(), decoder: URLEncodedFormDecoder())
+@FormUrlEncoded(encoder: URLEncodedFormEncoder(), decoder: JSONDecoder())
 @POST("/form")
 func submitForm(data: FormData) async throws
 // POST /form (form body: ...=...&....=...&...=...)
@@ -247,7 +247,7 @@ func updateUser(
 // @Part 支持自定义 name、filename、mimeType。
 
 // 支持自定义 encoder 和 decoder
-@Multipart(encoder: MultipartEncoder(), decoder: MultipartDecoder())
+@Multipart(encoder: MultipartEncoder(), decoder: JSONDecoder())
 @POST("/upload")
 func uploadFile(file: URL, meta: [String: String]) async throws -> UploadResponse
 // POST /upload (multipart: file,meta)
@@ -311,18 +311,18 @@ func getUserList() async throws -> (list: [(id: String, name: String)], count: I
 
 ---
 
-### 12. Streaming（AsyncStream）
+### 12. EventStreaming（AsyncStream）
 
-- `@Streaming` 标注让客户端保持长连接，适用于 Server-Sent Events 持续推送的场景。
+- `@EventStreaming` 标注让客户端保持长连接，适用于 Server-Sent Events 持续推送的场景。
 - 方法返回 `AsyncStream`（或 `AsyncThrowingStream`）来逐条消费服务端事件，配合 `for await` 监听即可。
 
 ```swift
-@Streaming
+@EventStreaming
 @GET("/events/stream")
 func listenEvents(roomID: String) async throws -> AsyncStream<String>
 // GET /events/stream?roomID=... 持续推送 Event
 
-@Streaming
+@EventStreaming
 @GET("/events/stream")
 func listenEventsThrowing(roomID: String) async throws -> AsyncThrowingStream<String, Error>
 // GET /events/stream?roomID=... 持续推送 Event

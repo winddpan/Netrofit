@@ -4,7 +4,7 @@ enum PayloadFormat: String {
     case JSON
     case FormUrlEncoded
     case Multipart
-    case Streaming
+    case EventStreaming
 }
 
 extension AttributeListSyntax {
@@ -15,8 +15,8 @@ extension AttributeListSyntax {
             return .FormUrlEncoded
         } else if let _ = findAttribute(named: "Multipart") {
             return .Multipart
-        } else if let _ = findAttribute(named: "Streaming") {
-            return .Streaming
+        } else if let _ = findAttribute(named: "EventStreaming") {
+            return .EventStreaming
         }
         return nil
     }

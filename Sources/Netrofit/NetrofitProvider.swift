@@ -5,10 +5,6 @@ public protocol NetrofitInterceptor {
     func intercept(builder: inout RequestBuilder, next: Next) throws -> NetrofitTask
 }
 
-public enum NetrofitProviderError: Error {
-    case badURL(String, String)
-}
-
 /// Makes URL requests.
 public final class NetrofitProvider {
     public let baseURL: String
@@ -23,7 +19,7 @@ public final class NetrofitProvider {
 
     public func task(with builder: RequestBuilder) throws -> NetrofitTask {
         let raw: NetrofitInterceptor.Next = { builder in
-            let url = try self.getRequestURL(builder)
+            let url = try builder.getFullURL(baseURL: self.baseURL)
             let method = builder.method
             let headers = builder.headers
             let body = try builder.bodyData()
@@ -40,16 +36,6 @@ public final class NetrofitProvider {
 
         var builder = builder
         return try next(&builder)
-    }
-
-    private func getRequestURL(_ builder: RequestBuilder) throws -> URL {
-        let fixedUrlStr = (baseURL.components(separatedBy: "/") + builder.path.components(separatedBy: "/")).filter { $0.isEmpty }.joined(
-            separator: "/"
-        )
-        guard let url = URL(string: fixedUrlStr) else {
-            throw NetrofitProviderError.badURL(baseURL, builder.path)
-        }
-        return url
     }
 
 //    @discardableResult

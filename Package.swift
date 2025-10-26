@@ -39,12 +39,11 @@ let package = Package(
         // A client of the library, which is able to use the macro in its own code.
         .executableTarget(name: "NetrofitClient", dependencies: ["Netrofit"]),
 
-//        .testTarget(
-//            name: "NetrofitTests",
-//            dependencies: [
-//                "PapyrusPlugin",
-//                .product(name: "MacroTesting", package: "swift-macro-testing"),
-//            ],
-//        ),
+        .testTarget(
+            name: "NetrofitTests",
+            dependencies: [
+                "Netrofit",
+            ],
+        ),
     ]
 )

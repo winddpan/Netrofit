@@ -7,7 +7,7 @@ enum NetrofitTaskError: Error {
 }
 
 final class _NetrofitTask: NetrofitTask, Hashable {
-    enum StreamingState {
+    enum EventStreamingState {
         case idle
         case streaming
     }
@@ -38,7 +38,7 @@ final class _NetrofitTask: NetrofitTask, Hashable {
     private(set) var responseData = Data()
     private(set) var dataTask: URLSessionDataTask?
 
-    private var state: StreamingState = .idle
+    private var state: EventStreamingState = .idle
     private var continuations: [ContinuationKind] = []
 
     init(urlSession: URLSession, request: URLRequest) {
@@ -74,7 +74,7 @@ final class _NetrofitTask: NetrofitTask, Hashable {
                 decoder: decoder,
                 yield: { chunk in
                     do {
-                        let value = try decoder.decode(T.self, from: chunk)
+                        let value = try decoder.decodeBody(T.self, from: chunk)
                         continuation.yield(value)
                     } catch {
                         continuation.finish()
@@ -98,14 +98,14 @@ final class _NetrofitTask: NetrofitTask, Hashable {
 
         state = .streaming
 
-        return AsyncThrowingStream(T.self, bufferingPolicy: .unbounded) { continuation in
+        return AsyncThrowingStream(T.self) { continuation in
             let wrapper = ThrowingStreamWrapper(
                 decoder: decoder,
                 yield: { result in
                     switch result {
                     case let .success(chunk):
                         do {
-                            let value = try decoder.decode(T.self, from: chunk)
+                            let value = try decoder.decodeBody(T.self, from: chunk)
                             continuation.yield(value)
                         } catch {
                             continuation.finish(throwing: NetrofitTaskError.unexpectedDecodingError(error))
