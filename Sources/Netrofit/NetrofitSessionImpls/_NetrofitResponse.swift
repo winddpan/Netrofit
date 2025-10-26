@@ -20,7 +20,7 @@ struct _NetrofitResponse: NetrofitResponse {
         guard let body else {
             throw NetrofitResponseError.decodingEmptyDataError
         }
-        return try decoder.decodeBody(type, from: body)
+        return try decoder.decodeBody(type, from: body, contentType: headers?["Content-Type"])
     }
 
     func validate() throws {

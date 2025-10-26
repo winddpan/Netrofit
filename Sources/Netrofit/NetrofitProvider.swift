@@ -19,10 +19,10 @@ public final class NetrofitProvider {
 
     public func task(with builder: RequestBuilder) throws -> NetrofitTask {
         let raw: NetrofitInterceptor.Next = { builder in
-            let url = try builder.getFullURL(baseURL: self.baseURL)
-            let method = builder.method
-            let headers = builder.headers
+            let url = try builder.fullURL(baseURL: self.baseURL)
+            let headers = builder.fullHeaders()
             let body = try builder.bodyData()
+            let method = builder.method
             return self.session.createTask(method: method, url: url, headers: headers, body: body)
         }
 

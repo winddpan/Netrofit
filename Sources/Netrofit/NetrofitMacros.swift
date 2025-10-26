@@ -40,7 +40,7 @@ public macro Multipart(
 @attached(peer)
 public macro EventStreaming(
     encoder: HTTPBodyEncoder = EventStreamingEncoder(),
-    decoder: HTTPBodyDecoder = TextPlainDecoder()
+    decoder: HTTPBodyDecoder = JSONDecoder()
 ) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 // MARK: Method

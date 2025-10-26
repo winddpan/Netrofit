@@ -9,10 +9,16 @@ open class URLEncodedFormEncoder: HTTPBodyEncoder {
         guard let queries = value as? [String: String], !queries.isEmpty else {
             return nil
         }
+
+        var hasPrev = false
         var data = Data()
         for (key, value) in queries {
-            if let line = "\(key)=\(value)".data(using: .utf8) {
-                data.append(line)
+            if hasPrev {
+                data.append("&".data(using: .utf8)!)
+            }
+            if let seg = "\(key)=\(value)".data(using: .utf8) {
+                data.append(seg)
+                hasPrev = true
             }
         }
         return data

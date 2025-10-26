@@ -25,16 +25,16 @@ extension AttributeListSyntax {
         var decoder: String?
         if let attribute = findAttribute(named: "FormUrlEncoded") {
             encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "URLEncodedFormEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "DynamicContentTypeDecoder()"
         } else if let attribute = findAttribute(named: "Multipart") {
             encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "MultipartEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "DynamicContentTypeDecoder()"
         } else if let attribute = findAttribute(named: "JSON") {
             encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "JSONEncoder()"
             decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
         } else if let attribute = findAttribute(named: "EventStreaming") {
             encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "EventStreamingEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "TextPlainDecoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "DynamicContentTypeDecoder()"
         }
         return (encoder, decoder)
     }

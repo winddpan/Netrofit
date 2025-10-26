@@ -81,7 +81,7 @@ public struct RequestBuilder {
 }
 
 extension RequestBuilder {
-    public func getFullURL(baseURL: String) throws -> URL {
+    public func fullURL(baseURL: String) throws -> URL {
         var baseURL = baseURL
         var path = path
         if baseURL.hasSuffix("/") {
@@ -116,6 +116,11 @@ extension RequestBuilder {
         case .EventStreaming:
             try streamingPayloadData()
         }
+    }
+
+    public func fullHeaders()  -> [String: String] {
+        let contentType = ["Content-Type": encoder.contentType]
+        return contentType.merging(headers, uniquingKeysWith: { _, new in new })
     }
 
     private func JSONPayloadData() throws -> Data? {

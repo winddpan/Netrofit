@@ -14,7 +14,7 @@ struct APIMacro: MemberMacro {
 
         let codec = attributes?.getCoderIdentifierType()
         let encoder = codec?.encoder ?? "JSONEncoder()"
-        let decoder = codec?.decoder ?? "JSONDecoder()"
+        let decoder = codec?.decoder ?? "DynamicContentTypeDecoder()"
 
         let ifPublic = declaration.modifiers.contains(where: {
             $0.name.text == "public" || $0.name.text == "open"

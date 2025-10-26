@@ -72,9 +72,10 @@ final class _NetrofitTask: NetrofitTask, Hashable {
         return AsyncStream<T> { continuation in
             let wrapper = StreamWrapper(
                 decoder: decoder,
-                yield: { chunk in
+                yield: { [weak self] chunk in
                     do {
-                        let value = try decoder.decodeBody(T.self, from: chunk)
+                        let contentType = (self?.urlResponse as? HTTPURLResponse)?.allHeaderFields["Content-Type"] as? String
+                        let value = try decoder.decodeBody(T.self, from: chunk, contentType: contentType)
                         continuation.yield(value)
                     } catch {
                         continuation.finish()
@@ -101,11 +102,12 @@ final class _NetrofitTask: NetrofitTask, Hashable {
         return AsyncThrowingStream(T.self) { continuation in
             let wrapper = ThrowingStreamWrapper(
                 decoder: decoder,
-                yield: { result in
+                yield: { [weak self] result in
                     switch result {
                     case let .success(chunk):
                         do {
-                            let value = try decoder.decodeBody(T.self, from: chunk)
+                            let contentType = (self?.urlResponse as? HTTPURLResponse)?.allHeaderFields["Content-Type"] as? String
+                            let value = try decoder.decodeBody(T.self, from: chunk, contentType: contentType)
                             continuation.yield(value)
                         } catch {
                             continuation.finish(throwing: NetrofitTaskError.unexpectedDecodingError(error))
@@ -130,6 +132,7 @@ final class _NetrofitTask: NetrofitTask, Hashable {
 
     func didReceiveData(_ data: Data) {
         responseData.append(data)
+
         for continuation in continuations {
             switch continuation {
             case let .stream(wrapper):
