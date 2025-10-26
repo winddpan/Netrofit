@@ -1,22 +1,29 @@
 # Netrofit
 
 A Swift version of Retrofit, inspired by Retrofit's API design and enhanced with Swift's type inference capabilities.
-Automatically recognizes scenarios **without extra annotations**, and adds Swift-specific features (tuple returns, nested tuples).
-Supports SSE (Server-Sent Events).
+Automatically recognizes scenarios **without extra annotations**.
 
+### Special Features
+* Response KeyPath Parsing (nested)
+* Tuple Returns (nested)
+* Request and Response Interceptor
+* SSE (Server-Sent Events)
+
+### Example
 ```swift
 @API
 @Headers(["token": "Bearer JWT_TOKEN"])
 struct UsersAPI {
     @GET("/user")
-    func getUser(@Query("identifier") id: String) async throws -> User
-    // GET /user?identifier=...
+    func getUser(id: String) async throws -> User
+    // GET /user?id=...
 
     @POST("/user")
     func createUser(email: String, password: String) async throws -> (id: String, name: String)
     // POST /user (body: {"email": String, "password": String}})
 
     @GET("/users/{username}/todos")
+    @ResponseKeyPath("data.list")
     func getTodos(username: String) async throws -> [Todo]
     // GET /users/johne/todos
 
@@ -28,7 +35,11 @@ struct UsersAPI {
 }
 
 let provider = Provider(baseURL: "https://www.example.com")
-let resp = try await UsersAPI(provider).getUser(id: "johne")
+let resp = try await UsersAPI(provider).getUser(id: "john")
+
+for await event in try await api.completions(model: "gpt-5", messages: ...) {
+    print(event)
+}
 
 ```
 
