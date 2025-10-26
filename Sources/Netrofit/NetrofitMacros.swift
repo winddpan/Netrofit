@@ -16,7 +16,7 @@ public macro ResponseKeyPath(_ path: String) = #externalMacro(module: "NetrofitM
 @attached(peer)
 public macro JSON(
     encoder: HTTPBodyEncoder = JSONEncoder(),
-    decoder: HTTPBodyDecoder = JSONDecoder()
+    decoder: HTTPBodyDecoder = DynamicContentTypeDecoder()
 ) = #externalMacro(
     module: "NetrofitMacros",
     type: "EmptyMacro"
@@ -25,7 +25,7 @@ public macro JSON(
 @attached(peer)
 public macro FormUrlEncoded(
     encoder: HTTPBodyEncoder = URLEncodedFormEncoder(),
-    decoder: HTTPBodyDecoder = JSONDecoder()
+    decoder: HTTPBodyDecoder = DynamicContentTypeDecoder()
 ) = #externalMacro(
     module: "NetrofitMacros",
     type: "EmptyMacro"
@@ -34,13 +34,13 @@ public macro FormUrlEncoded(
 @attached(peer)
 public macro Multipart(
     encoder: HTTPBodyEncoder = MultipartEncoder(),
-    decoder: HTTPBodyDecoder = JSONDecoder()
+    decoder: HTTPBodyDecoder = DynamicContentTypeDecoder()
 ) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 @attached(peer)
 public macro EventStreaming(
-    encoder: HTTPBodyEncoder = EventStreamingEncoder(),
-    decoder: HTTPBodyDecoder = JSONDecoder()
+    encoder: HTTPBodyEncoder = JSONEncoder(),
+    decoder: HTTPBodyDecoder = DynamicContentTypeDecoder()
 ) = #externalMacro(module: "NetrofitMacros", type: "EmptyMacro")
 
 // MARK: Method

@@ -20,7 +20,7 @@ public struct RequestBuilder {
     public var queries: [String: String] = [:]
     public var body: Encodable?
     public var fields: [String: Encodable] = [:]
-    public var parts: [(name: String, value: Encodable, filename: String?, mimeType: String?)] = []
+    public var parts: [NetrofitBodyPart] = []
 
     public var responseKeyPath: String?
     public var payloadFormat: PayloadFormat = .JSON
@@ -74,9 +74,14 @@ public struct RequestBuilder {
         fields[key] = value
     }
 
-    public mutating func addPart<E: Encodable>(_ name: String, value: E?, filename: String?, mimeType: String?) {
+    public mutating func addPart(_ name: String, value: String?, filename: String?, mimeType: String?) {
+        guard let value = value?.data(using: .utf8) else { return }
+        parts.append(NetrofitBodyPart(name: name, data: value, fileName: filename, mimeType: mimeType))
+    }
+
+    public mutating func addPart(_ name: String, value: Data?, filename: String?, mimeType: String?) {
         guard let value else { return }
-        parts.append((name, value, filename, mimeType))
+        parts.append(NetrofitBodyPart(name: name, data: value, fileName: filename, mimeType: mimeType))
     }
 }
 
@@ -118,7 +123,7 @@ extension RequestBuilder {
         }
     }
 
-    public func fullHeaders()  -> [String: String] {
+    public func fullHeaders() -> [String: String] {
         let contentType = ["Content-Type": encoder.contentType]
         return contentType.merging(headers, uniquingKeysWith: { _, new in new })
     }
@@ -136,6 +141,10 @@ extension RequestBuilder {
         return nil
     }
 
+    private func streamingPayloadData() throws -> Data? {
+        try JSONPayloadData()
+    }
+
     private func formUrlEncodedPayloadData() throws -> Data? {
         var mappedFields = [String: String]()
         for (key, value) in fields {
@@ -145,10 +154,6 @@ extension RequestBuilder {
     }
 
     private func multipartPayloadData() throws -> Data? {
-        nil
-    }
-
-    private func streamingPayloadData() throws -> Data? {
         nil
     }
 }

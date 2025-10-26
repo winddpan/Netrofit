@@ -1,7 +1,7 @@
 import Foundation
 
-enum TextPlainDecoderError: Error {
-    case unexcptedReturnType
+public enum TextPlainDecoderError: Error {
+    case unexpectedReturnType
 }
 
 open class TextPlainDecoder: HTTPBodyDecoder {
@@ -9,7 +9,7 @@ open class TextPlainDecoder: HTTPBodyDecoder {
         if type == String.self {
             return String(data: data, encoding: .utf8) as! D
         }
-        throw TextPlainDecoderError.unexcptedReturnType
+        throw TextPlainDecoderError.unexpectedReturnType
     }
 
     public init() {}

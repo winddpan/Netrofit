@@ -40,6 +40,7 @@ final class _NetrofitTask: NetrofitTask, Hashable {
 
     private var state: EventStreamingState = .idle
     private var continuations: [ContinuationKind] = []
+    private var lineBuffer = Data() // Buffer for accumulating incomplete lines in SSE streaming
 
     init(urlSession: URLSession, request: URLRequest) {
         self.urlSession = urlSession
@@ -133,15 +134,48 @@ final class _NetrofitTask: NetrofitTask, Hashable {
     func didReceiveData(_ data: Data) {
         responseData.append(data)
 
-        for continuation in continuations {
-            switch continuation {
-            case let .stream(wrapper):
-                wrapper.yield(data)
-            case let .throwingStream(wrapper):
-                wrapper.yield(.success(data))
-            case .response:
-                break
+        // For streaming scenarios, accumulate data and process line by line (SSE format)
+        guard state == .streaming else { return }
+
+        lineBuffer.append(data)
+
+        // Find all complete lines (separated by \n or \r\n)
+        let newline = UInt8(ascii: "\n")
+        var startIndex = lineBuffer.startIndex
+
+        while let newlineIndex = lineBuffer[startIndex...].firstIndex(of: newline) {
+            // Extract the complete line (including the newline)
+            let lineData = lineBuffer[startIndex ... newlineIndex]
+
+            var yield = true
+            if lineData.isEmpty {
+                yield = false
             }
+            if lineData.count == 1, lineData.first == newline {
+                yield = false
+            }
+            if yield {
+                // Yield the complete line to all stream continuations
+                for continuation in continuations {
+                    switch continuation {
+                    case let .stream(wrapper):
+                        wrapper.yield(Data(lineData))
+                    case let .throwingStream(wrapper):
+                        wrapper.yield(.success(Data(lineData)))
+                    case .response:
+                        break
+                    }
+                }
+            }
+
+            startIndex = lineBuffer.index(after: newlineIndex)
+        }
+
+        // Keep the remaining incomplete data in buffer
+        if startIndex < lineBuffer.endIndex {
+            lineBuffer = Data(lineBuffer[startIndex...])
+        } else {
+            lineBuffer.removeAll(keepingCapacity: true)
         }
     }
 
@@ -163,6 +197,21 @@ final class _NetrofitTask: NetrofitTask, Hashable {
         response.body = responseData
         response.headers = headers
         response.statusCode = httpResponse?.statusCode
+
+        // Process any remaining buffered data before finishing stream
+        if state == .streaming && !lineBuffer.isEmpty {
+            for continuation in continuations {
+                switch continuation {
+                case let .stream(wrapper):
+                    wrapper.yield(lineBuffer)
+                case let .throwingStream(wrapper):
+                    wrapper.yield(.success(lineBuffer))
+                case .response:
+                    break
+                }
+            }
+            lineBuffer.removeAll()
+        }
 
         continuations.removeAll { element in
             switch element {

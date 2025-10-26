@@ -72,6 +72,8 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
         let encoder = codec.encoder
         let decoder = codec.decoder
 
+        try vaildAsyncThrowSpecifiers()
+
         var codes = [CodeBlockItemSyntax]()
         codes.append(
             """
@@ -170,7 +172,7 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
         if let returnType = funcDecl.signature.returnClause?.type, returnType.trimmedDescription != "Void" {
             if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncStream" {
                 guard let genericType = type.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
-                    throw NetrofitError.returnTypeError("unknown AsyncStream genericArgument")
+                    throw NetrofitError.returnTypeError("invaild AsyncStream genericArgument")
                 }
                 codes.append(
                     """
@@ -179,7 +181,7 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
                 )
             } else if let type = returnType.as(IdentifierTypeSyntax.self), type.name.text == "AsyncThrowingStream" {
                 guard let genericType = type.genericArgumentClause?.arguments.first?.argument.trimmedDescription else {
-                    throw NetrofitError.returnTypeError("unknown AsyncThrowingStream genericArgument")
+                    throw NetrofitError.returnTypeError("invaild AsyncThrowingStream genericArgument")
                 }
                 codes.append(
                     """
@@ -212,6 +214,15 @@ struct MethodMacroParser<D: DeclSyntaxProtocol & WithOptionalCodeBlockSyntax, C:
         }
 
         return codes
+    }
+}
+
+extension MethodMacroParser {
+    func vaildAsyncThrowSpecifiers() throws {
+        let desc = funcDecl.signature.effectSpecifiers?.trimmedDescription ?? ""
+        guard desc.components(separatedBy: " ").filter({ !$0.isEmpty }).joined(separator: " ") == "async throws" else {
+            throw NetrofitError.contextError("missing 'async throws'")
+        }
     }
 }
 
@@ -350,11 +361,18 @@ extension MethodMacroParser {
         let variblePathComps = self.variblePathComps
         for arg in funcArgs {
             if let filed = arg.attributes.findAttribute(named: "Part"), filed.atSign.text == "@" {
+                if !["String", "Data"].contains(arg.identifierType) {
+                    throw NetrofitError.multipartError("@Multipart only allowes Data/String")
+                }
+
                 let name = filed.findLabel(named: "name")?.expression.trimmedDescription ?? arg.externalName.addingQuotes()
                 let filename = filed.findLabel(named: "filename")?.expression.trimmedDescription ?? "nil"
                 let mimeType = filed.findLabel(named: "mimeType")?.expression.trimmedDescription ?? "nil"
                 datas.append((name, arg.internalName, filename, mimeType))
             } else if arg.attributes.isEmpty, !variblePathComps.contains(arg.externalName), defaultAsPart {
+                if !["String", "Data"].contains(arg.identifierType) {
+                    throw NetrofitError.multipartError("@Multipart only allowes Data/String")
+                }
                 if arg.externalName == "_" {
                     throw NetrofitError.multipartError("underline '_' argument in @Multipart is not allowed!")
                 }
@@ -370,7 +388,7 @@ extension MethodMacroParser {
         for arg in funcArgs {
             if let filed = arg.attributes.findAttribute(named: "Header"), filed.atSign.text == "@" {
                 if arg.identifierType != "String", arg.identifierType != "String?", arg.identifierType != "String!" {
-                    throw NetrofitError.headerError("@Header only applys String")
+                    throw NetrofitError.headerError("@Header only allowes String")
                 }
                 let key = filed.findLabel(named: nil)?.expression.trimmedDescription ?? arg.externalName.addingQuotes()
                 datas.append((key, arg.internalName))
@@ -386,7 +404,7 @@ extension MethodMacroParser {
             if let filed = arg.attributes.findAttribute(named: "HeaderMap"), filed.atSign.text == "@" {
                 let identifierType = arg.identifierType.replacingOccurrences(of: " ", with: "")
                 if !identifierType.hasPrefix("[String:String]") {
-                    throw NetrofitError.headerError("@HeaderMap only applys [String: String]")
+                    throw NetrofitError.headerError("@HeaderMap only allows [String: String]")
                 }
                 datas.append(arg.internalName)
             }

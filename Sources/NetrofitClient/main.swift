@@ -165,9 +165,9 @@ struct MultipartTest {
     // @Part 支持自定义 name、filename、mimeType。
 
     // 支持自定义 encoder 和 decoder
-    @Multipart(encoder: MultipartEncoder(), decoder: JSONDecoder())
+    @Multipart(encoder: MultipartEncoder(), decoder: DynamicContentTypeDecoder())
     @POST("/upload")
-    func uploadFile(file: Data, meta: [String: String]) async throws
+    func uploadFile(file: Data) async throws
     // POST /upload (multipart: file,meta)
 }
 
@@ -303,7 +303,7 @@ struct AsyncStreamTest {
     func listenEventsThrowing(roomID: String) async throws -> AsyncThrowingStream<String, Error>
     // GET /events/stream?roomID=... 持续推送 Event
 
-    class MyEventStreamingEncoder: EventStreamingEncoder {}
+    class MyEventStreamingEncoder: JSONEncoder {}
     class MyEventStreamingDecoder: TextPlainDecoder {}
 
     @EventStreaming(encoder: MyEventStreamingEncoder(), decoder: MyEventStreamingDecoder())

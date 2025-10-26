@@ -1,7 +1,7 @@
 import Netrofit
 import XCTest
 
-let httpbinProvider = NetrofitProvider(baseURL: "https://httpbin.org")
+private let httpbinProvider = NetrofitProvider(baseURL: "https://httpbin.org")
 
 // MARK: - HTTPBin Response Models
 

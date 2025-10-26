@@ -6,7 +6,13 @@ open class TextPlainEncoder: HTTPBodyEncoder {
     }
 
     open func encodeBody<E>(_ value: E) throws -> Data? where E: Encodable {
-        fatalError()
+        if let data = value as? Data {
+            return data
+        }
+        if let string = value as? String {
+            return string.data(using: .utf8)
+        }
+        return "\(value)".data(using: .utf8)
     }
 
     public init() {}

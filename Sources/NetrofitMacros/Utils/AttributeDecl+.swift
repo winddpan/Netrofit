@@ -31,9 +31,9 @@ extension AttributeListSyntax {
             decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "DynamicContentTypeDecoder()"
         } else if let attribute = findAttribute(named: "JSON") {
             encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "JSONEncoder()"
-            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "JSONDecoder()"
+            decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "DynamicContentTypeDecoder()"
         } else if let attribute = findAttribute(named: "EventStreaming") {
-            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "EventStreamingEncoder()"
+            encoder = attribute.findLabel(named: "encoder")?.expression.trimmedDescription ?? "JSONEncoder()"
             decoder = attribute.findLabel(named: "decoder")?.expression.trimmedDescription ?? "DynamicContentTypeDecoder()"
         }
         return (encoder, decoder)

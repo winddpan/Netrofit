@@ -200,7 +200,7 @@ func createUser(id: String, name: String) async throws -> User
 // POST /users/new (json body: {"id": String, "name": String})
 
 // 支持自定义 encoder 和 decoder
-@JSON(encoder: JSONEncoder(), decoder: JSONDecoder())
+@JSON(encoder: JSONEncoder(), decoder: DynamicContentTypeDecoder())
 @POST("/data")
 func createUser(user: User) async throws -> User
 // POST /users/new (json body: {"user": User})
