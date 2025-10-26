@@ -173,6 +173,10 @@ struct HTTPBinAPI {
     /// Test encoded query parameter
     @GET("/get")
     func getEncoded(@Query(encoded: true) text: String) async throws -> HTTPBinGetResponse
+
+    @PUT("/anything")
+    @Multipart
+    func upload(title: String, text: String) async throws -> String
 }
 
 // MARK: - Test Cases
@@ -386,5 +390,10 @@ final class HTTPBinTests: XCTestCase {
         print("Encoded query parameter response:", resp)
 
         XCTAssertNotNil(resp.args["text"])
+    }
+
+    func testMultipartUpload() async throws {
+        let resp = try await api.upload(title: "hello", text: "world")
+        print(resp)
     }
 }

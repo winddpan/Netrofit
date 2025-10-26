@@ -12,15 +12,22 @@ open class DynamicContentTypeDecoder: HTTPBodyDecoder {
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
 
-        switch mainType {
-        case "text/plain":
-            return try TextPlainDecoder().decodeBody(type, from: data, contentType: contentType)
-        case "application/json":
-            return try JSONDecoder().decodeBody(type, from: data, contentType: contentType)
-        case "text/event-stream":
-            return try EventStreamingDecoder().decodeBody(type, from: data, contentType: contentType)
-        default:
-            throw DynamicContentTypeError.undetectContentType(contentType)
+        do {
+            switch mainType {
+            case "text/plain":
+                return try TextPlainDecoder().decodeBody(type, from: data, contentType: contentType)
+            case "application/json":
+                return try JSONDecoder().decodeBody(type, from: data, contentType: contentType)
+            case "text/event-stream":
+                return try EventStreamingDecoder().decodeBody(type, from: data, contentType: contentType)
+            default:
+                throw DynamicContentTypeError.undetectContentType(contentType)
+            }
+        } catch {
+            if type.self == String.self {
+                return String(data: data, encoding: .utf8) as! D
+            }
+            throw error
         }
     }
 

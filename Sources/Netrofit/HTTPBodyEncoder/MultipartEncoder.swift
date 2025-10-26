@@ -3,7 +3,7 @@ import Foundation
 public struct NetrofitBodyPart: Encodable {
     public let name: String
     public let data: Data
-    public let fileName: String?
+    public let filename: String?
     public let mimeType: String?
 }
 
@@ -39,8 +39,8 @@ open class MultipartEncoder: HTTPBodyEncoder {
 
     private func partHeaderData(_ part: NetrofitBodyPart) -> Data {
         var disposition = "form-data; name=\"\(part.name)\""
-        if let fileName = part.fileName {
-            disposition += "; filename=\"\(fileName)\""
+        if let filename = part.filename {
+            disposition += "; filename=\"\(filename)\""
         }
 
         var headers = ["Content-Disposition": disposition]

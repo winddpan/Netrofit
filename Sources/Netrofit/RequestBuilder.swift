@@ -75,13 +75,13 @@ public struct RequestBuilder {
     }
 
     public mutating func addPart(_ name: String, value: String?, filename: String?, mimeType: String?) {
-        guard let value = value?.data(using: .utf8) else { return }
-        parts.append(NetrofitBodyPart(name: name, data: value, fileName: filename, mimeType: mimeType))
+        guard let data = value?.data(using: .utf8) else { return }
+        addPart(name, value: data, filename: filename, mimeType: mimeType)
     }
 
     public mutating func addPart(_ name: String, value: Data?, filename: String?, mimeType: String?) {
         guard let value else { return }
-        parts.append(NetrofitBodyPart(name: name, data: value, fileName: filename, mimeType: mimeType))
+        parts.append(NetrofitBodyPart(name: name, data: value, filename: filename, mimeType: mimeType))
     }
 }
 
@@ -154,6 +154,6 @@ extension RequestBuilder {
     }
 
     private func multipartPayloadData() throws -> Data? {
-        nil
+        return try encoder.encodeBody(parts)
     }
 }
