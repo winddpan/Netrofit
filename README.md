@@ -25,7 +25,7 @@ struct UsersAPI {
     @GET("/users/{username}/todos")
     @ResponseKeyPath("data.list")
     func getTodos(username: String) async throws -> [Todo]
-    // GET /users/johne/todos
+    // GET /users/john/todos
 
     @POST("/chat/completions")
     @Headers(["Authorization": "Bearer ..."])
@@ -35,14 +35,26 @@ struct UsersAPI {
 }
 
 let provider = Provider(baseURL: "https://www.example.com")
-let resp = try await UsersAPI(provider).getUser(id: "john")
+let api = UsersAPI(provider)
 
+let resp = try await api.getUser(id: "john")
 for await event in try await api.completions(model: "gpt-5", messages: ...) {
     print(event)
 }
 
 ```
 
+---
+### Installation
+Swift Package Manager
+
+```
+.package(url: "https://github.com/winddpan/Netrofit", from: "0.1.0")
+```
+
+```
+.product(name: "Netrofit", package: "Netrofit")
+```
 ---
 
 ### 1. Basic Request Methods
@@ -63,7 +75,7 @@ func updateUser(id: Int, _ user: User) async throws -> User
 // PUT /users/{id} (body: User)
 
 @PATCH("/users/{id}")
-func partialUpdateUser(id: Int, _ fields: [String: Any]) async throws -> User
+func partialUpdateUser(id: Int, _ fields: [String: String]) async throws -> User
 // PATCH /users/{id} (body: fields)
 
 @DELETE("/users/{id}")
@@ -195,7 +207,7 @@ func createUser(@Field("new_name") name: String, id: String) async throws -> Use
 @POST("/users/new")
 @FormUrlEncoded
 func createUser(@Field("new_name") name: String, id: String) async throws -> User
-// POST /users/new (form body: {"new_name": String, "id": String})
+// POST /users/new (form body: new_name=...&id=...})
 ```
 
 ---
@@ -305,7 +317,7 @@ Use `@ResponseKeyPath` to parse a KeyPath in JSON, supports multi-level nesting.
 @GET("/users")
 @ResponseKeyPath("data.list")
 func listUsers() async throws -> [User]
-// GET /users (response key path: data.list)
+// GET /users (response: {"data": {"list": [...]}})
 ```
 
 ---

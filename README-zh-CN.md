@@ -1,24 +1,30 @@
 # Netrofit
 
 Swift 版本 Retrofit，参考 Retrofit API 设计，结合 Swift 的类型推断能力，
-自动识别的场景**无需额外注解**，并增强 Swift 专属特性（tuple 返回、嵌套 tuple）。
-支持SSE。
+自动识别的场景**无需额外注解**。
+
+### 特色功能
+* Response KeyPath 解析（嵌套）
+* Tuple 返回值（嵌套）
+* 请求和响应拦截器
+* SSE（Server-Sent Events）
 
 ```swift
 @API
 @Headers(["token": "Bearer JWT_TOKEN"])
 struct UsersAPI {
     @GET("/user")
-    func getUser(@Query("identifier") id: String) async throws -> User
-    // GET /user?identifier=...
+    func getUser(id: String) async throws -> User
+    // GET /user?id=...
 
     @POST("/user")
     func createUser(email: String, password: String) async throws -> (id: String, name: String)
     // POST /user (body: {"email": String, "password": String}})
 
     @GET("/users/{username}/todos")
+    @ResponseKeyPath("data.list")
     func getTodos(username: String) async throws -> [Todo]
-    // GET /users/johne/todos
+    // GET /users/john/todos
 
     @POST("/chat/completions")
     @Headers(["Authorization": "Bearer ..."])
@@ -28,10 +34,26 @@ struct UsersAPI {
 }
 
 let provider = Provider(baseURL: "https://www.example.com")
-let resp = try await UsersAPI(provider).getUser(id: "johne")
+let api = UsersAPI(provider)
+
+let resp = try await api.getUser(id: "john")
+for await event in try await api.completions(model: "gpt-5", messages: ...) {
+    print(event)
+}
 
 ```
 
+---
+### 安装
+Swift Package Manager
+
+```
+.package(url: "https://github.com/winddpan/Netrofit", from: "0.1.0")
+```
+
+```
+.product(name: "Netrofit", package: "Netrofit")
+```
 ---
 
 ### 1. 基本请求方法
@@ -184,7 +206,7 @@ func createUser(@Field("new_name") name: String, id: String) async throws -> Use
 @POST("/users/new")
 @FormUrlEncoded
 func createUser(@Field("new_name") name: String, id: String) async throws -> User
-// POST /users/new (form body: {"new_name": String, "id": String})
+// POST /users/new (form body: new_name=...&id=...)
 ```
 
 ---
