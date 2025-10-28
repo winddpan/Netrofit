@@ -396,3 +396,7 @@ for await event in try await api.listenEvents(roomID: "chat") {
 ## Acknowledgements
 
 Heavily inspired by [Rapyrus](https://github.com/joshuawright11/papyrus), [Retrofit](https://github.com/square/retrofit).
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=winddpan/Netrofit&type=date&legend=top-left)](https://www.star-history.com/#winddpan/Netrofit&type=date&legend=top-left)
