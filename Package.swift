@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import CompilerPluginSupport
@@ -19,7 +19,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+        .package(url: "https://github.com/swiftlang/swift-syntax", Version(600, 0, 1) ..< Version(603, 0, 0)),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.

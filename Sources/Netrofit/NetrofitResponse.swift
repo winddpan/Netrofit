@@ -5,7 +5,7 @@ public enum NetrofitResponseError: Error {
     case statusCodeError(Int)
 }
 
-public struct NetrofitResponse {
+public struct NetrofitResponse: Sendable {
     public var request: URLRequest
     public var body: Data?
     public var headers: [String: String]?

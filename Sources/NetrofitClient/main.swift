@@ -135,7 +135,7 @@ struct FormUrlEncodedTest {
     // POST /user/edit (form body: first=...&last=...)
 
     class MyURLEncodedFormEncoder: URLEncodedFormEncoder {}
-    class MyJSONDecoder: JSONDecoder {}
+    class MyJSONDecoder: JSONDecoder, @unchecked Sendable {}
 
     // 支持自定义 encoder 和 decoder
     @FormUrlEncoded(encoder: MyURLEncodedFormEncoder(), decoder: MyJSONDecoder())
@@ -303,7 +303,7 @@ struct AsyncStreamTest {
     func listenEventsThrowing(roomID: String) async throws -> AsyncThrowingStream<String, Error>
     // GET /events/stream?roomID=... 持续推送 Event
 
-    class MyEventStreamingEncoder: JSONEncoder {}
+    class MyEventStreamingEncoder: JSONEncoder, @unchecked Sendable {}
     class MyEventStreamingDecoder: TextPlainDecoder {}
 
     @EventStreaming(encoder: MyEventStreamingEncoder(), decoder: MyEventStreamingDecoder())

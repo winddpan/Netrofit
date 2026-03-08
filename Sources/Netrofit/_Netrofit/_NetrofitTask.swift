@@ -71,7 +71,7 @@ final class _NetrofitTask: NetrofitTask, Hashable {
     func connectStream<T>(
         _ type: T.Type,
         using builder: RequestBuilder
-    ) throws -> AsyncStream<T> where T: Decodable {
+    ) throws -> AsyncStream<T> where T: Decodable & Sendable {
         guard state == .idle else {
             throw NetrofitTaskError.multipleStreamsUnsupported
         }
@@ -102,7 +102,7 @@ final class _NetrofitTask: NetrofitTask, Hashable {
     func connectThrowingStream<T>(
         _ type: T.Type,
         using builder: RequestBuilder
-    ) throws -> AsyncThrowingStream<T, Error> where T: Decodable {
+    ) throws -> AsyncThrowingStream<T, Error> where T: Decodable & Sendable {
         guard state == .idle else {
             throw NetrofitTaskError.multipleStreamsUnsupported
         }

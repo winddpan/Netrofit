@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol NetrofitSession {
+public protocol NetrofitSession: Sendable {
     func createTask(
         method: String,
         url: URL,
@@ -24,7 +24,7 @@ public protocol NetrofitTask {
 
     func decode<T: Decodable>(_ type: T.Type, response: NetrofitResponse, using builder: RequestBuilder) throws -> T
 
-    func connectStream<T: Decodable>(_ type: T.Type, using builder: RequestBuilder) throws -> AsyncStream<T>
+    func connectStream<T: Decodable & Sendable>(_ type: T.Type, using builder: RequestBuilder) throws -> AsyncStream<T>
 
-    func connectThrowingStream<T: Decodable>(_ type: T.Type, using builder: RequestBuilder) throws -> AsyncThrowingStream<T, Error>
+    func connectThrowingStream<T: Decodable & Sendable>(_ type: T.Type, using builder: RequestBuilder) throws -> AsyncThrowingStream<T, Error>
 }

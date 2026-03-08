@@ -11,10 +11,21 @@ extension NetrofitProvider {
     }
 }
 
-final class _NetrofitSession: NSObject, NetrofitSession, URLSessionDataDelegate {
+final class _NetrofitSession: NSObject, NetrofitSession, @unchecked Sendable, URLSessionDataDelegate {
     let configuration: URLSessionConfiguration
     private var urlSession: URLSession!
-    private var createdTasks = Set<_NetrofitTask>()
+    private let lock = NSLock()
+    private var _createdTasks = Set<_NetrofitTask>()
+    private var createdTasks: Set<_NetrofitTask> {
+        get {
+            lock.lock(); defer { lock.unlock() }
+            return _createdTasks
+        }
+        set {
+            lock.lock(); defer { lock.unlock() }
+            _createdTasks = newValue
+        }
+    }
 
     init(configuration: URLSessionConfiguration) {
         self.configuration = configuration

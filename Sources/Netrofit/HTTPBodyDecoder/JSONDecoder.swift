@@ -1,6 +1,6 @@
 import Foundation
 
-public enum JSONDecoderError: Error {
+public enum JSONDecoderError: Error, @unchecked Sendable {
     case errorKeyPath(String)
     case errorKeyPathValue(Any)
 }

@@ -1,9 +1,9 @@
 import Foundation
 
-public final class NetrofitProvider {
+public final class NetrofitProvider: Sendable {
     public let baseURL: String
     public let session: NetrofitSession
-    public var plugins: [NetrofitPlugin] = []
+    public let plugins: [NetrofitPlugin]
 
     public init(baseURL: String, session: NetrofitSession, plugins: [NetrofitPlugin] = []) {
         self.baseURL = baseURL
